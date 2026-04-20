@@ -1,0 +1,39 @@
+# Node.js dependencies
+**/node_modules/
+
+# Frontend and Electron build outputs
+**/build/
+**/dist/
+**/win-unpacked/
+**/.cache/
+coverage/
+
+# Packaged installers and archives
+*.exe
+*.zip
+*.blockmap
+*.pptx
+builder-debug.yml
+builder-effective-config.yaml
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Embedded git metadata from nested apps
+MD/client/.git/
+PH/client/.git/
