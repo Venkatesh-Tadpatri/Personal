@@ -96,42 +96,55 @@ async function initDb() {
     db = new SQL.Database();
   }
 
-  // Create tables
-  db.run(`
-    CREATE TABLE IF NOT EXISTS sellers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      serial_number TEXT NOT NULL,
-      name TEXT NOT NULL,
-      mobile TEXT NOT NULL,
-      material TEXT NOT NULL,
-      num_bags INTEGER NOT NULL,
-      lot_number TEXT NOT NULL,
-      weight REAL NOT NULL,
-      advance_amount REAL DEFAULT 0,
-      rate_fixed REAL DEFAULT 0,
-      amount REAL DEFAULT 0,
-      bag_data TEXT DEFAULT '[]',
-      entry_date TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+  // Create tables — each in its own db.run() (sql.js only executes first statement per call)
+  db.run(`CREATE TABLE IF NOT EXISTS sellers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    serial_number TEXT NOT NULL,
+    name TEXT NOT NULL,
+    mobile TEXT NOT NULL,
+    material TEXT NOT NULL,
+    num_bags INTEGER NOT NULL,
+    lot_number TEXT NOT NULL,
+    weight REAL NOT NULL,
+    advance_amount REAL DEFAULT 0,
+    labour_rate REAL DEFAULT 20,
+    rate_fixed REAL DEFAULT 0,
+    amount REAL DEFAULT 0,
+    bag_data TEXT DEFAULT '[]',
+    entry_date TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
 
-    CREATE TABLE IF NOT EXISTS buyers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      serial_number TEXT NOT NULL,
-      name TEXT NOT NULL,
-      mobile TEXT NOT NULL,
-      material TEXT NOT NULL,
-      num_bags INTEGER NOT NULL,
-      lot_number TEXT NOT NULL,
-      weight REAL NOT NULL,
-      advance_amount REAL DEFAULT 0,
-      rate_fixed REAL DEFAULT 0,
-      amount REAL DEFAULT 0,
-      bag_data TEXT DEFAULT '[]',
-      entry_date TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
+  db.run(`CREATE TABLE IF NOT EXISTS buyers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    serial_number TEXT NOT NULL,
+    name TEXT NOT NULL,
+    mobile TEXT NOT NULL,
+    material TEXT NOT NULL,
+    num_bags INTEGER NOT NULL,
+    lot_number TEXT NOT NULL,
+    weight REAL NOT NULL,
+    advance_amount REAL DEFAULT 0,
+    labour_rate REAL DEFAULT 5,
+    rate_fixed REAL DEFAULT 0,
+    amount REAL DEFAULT 0,
+    extra_bags INTEGER DEFAULT 0,
+    extra_bag_amount REAL DEFAULT 0,
+    bag_data TEXT DEFAULT '[]',
+    entry_date TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS buyer_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    buyer_name TEXT NOT NULL,
+    amount REAL NOT NULL,
+    payment_date TEXT NOT NULL,
+    note TEXT DEFAULT '',
+    bill_date TEXT DEFAULT NULL,
+    bill_material TEXT DEFAULT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
 
   // Auto-migration
   ['sellers', 'buyers'].forEach(table => {
@@ -139,6 +152,12 @@ async function initDb() {
     try { db.run(`ALTER TABLE ${table} ADD COLUMN rate_fixed REAL DEFAULT 0`); } catch {}
     try { db.run(`ALTER TABLE ${table} ADD COLUMN amount REAL DEFAULT 0`); } catch {}
   });
+  try { db.run(`ALTER TABLE sellers ADD COLUMN labour_rate REAL DEFAULT 20`); } catch {}
+  try { db.run(`ALTER TABLE buyers ADD COLUMN labour_rate REAL DEFAULT 5`); } catch {}
+  try { db.run(`ALTER TABLE buyers ADD COLUMN extra_bags INTEGER DEFAULT 0`); } catch {}
+  try { db.run(`ALTER TABLE buyers ADD COLUMN extra_bag_amount REAL DEFAULT 0`); } catch {}
+  try { db.run(`ALTER TABLE buyer_payments ADD COLUMN bill_date TEXT DEFAULT NULL`); } catch {}
+  try { db.run(`ALTER TABLE buyer_payments ADD COLUMN bill_material TEXT DEFAULT NULL`); } catch {}
 
   saveDb();
   console.log('[DB] Initialized at', dbPath);

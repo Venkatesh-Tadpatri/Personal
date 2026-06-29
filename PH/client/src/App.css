@@ -2,6 +2,11 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Hide number input increment/decrement spinner arrows everywhere */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
 :root {
   --bg-deep: #060d1a;
   --bg-card: #0d1b2e;
@@ -60,17 +65,17 @@ body {
 }
 
 .sidebar-logo {
-  padding: 28px 24px 20px;
+  padding: 14px 20px 12px;
   border-bottom: 1px solid var(--border);
 }
 
 .logo-icon {
-  width: 44px; height: 44px;
+  width: 34px; height: 34px;
   background: var(--accent);
-  border-radius: 12px;
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 12px;
-  font-size: 22px;
+  margin-bottom: 6px;
+  font-size: 18px;
 }
 
 .logo-title {
@@ -92,8 +97,8 @@ body {
 
 .sidebar-nav {
   flex: 1;
-  overflow-y: hidden;
-  padding: 12px 12px;
+  overflow-y: auto;
+  padding: 8px 12px;
 }
 
 .nav-section-label {

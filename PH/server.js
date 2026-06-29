@@ -352,11 +352,13 @@ app.post('/api/sellers', (req, res) => {
       entry_date, bag_data
     } = req.body;
 
-    console.log('[POST /api/sellers]', name, '| bag_data:', bag_data);
+    const materialName = (material || 'GENERAL').toUpperCase();
 
-    const exists = prepare('SELECT id FROM sellers WHERE serial_number = ? AND entry_date = ?').get(serial_number, entry_date);
+    console.log('[POST /api/sellers]', name, '| material:', materialName, '| bag_data:', bag_data);
+
+    const exists = prepare('SELECT id FROM sellers WHERE serial_number = ? AND material = ? AND entry_date = ?').get(serial_number, materialName, entry_date);
     if (exists) {
-      return res.status(400).json({ success: false, error: `Serial number ${serial_number} already used on ${entry_date}.` });
+      return res.status(400).json({ success: false, error: `Serial number ${serial_number} already used for ${materialName} on ${entry_date}.` });
     }
 
     let bagDataStr = '[]';
@@ -372,7 +374,7 @@ app.post('/api/sellers', (req, res) => {
       serial_number,
       name.toUpperCase(),
       mobile || '0000000000',
-      (material || 'GENERAL').toUpperCase(),
+      materialName,
       num_bags,
       lot_number,
       weight,
@@ -394,7 +396,7 @@ app.put('/api/sellers/:id', (req, res) => {
     const fields = [];
     const values = [];
 
-    const allowed = ['serial_number','name','mobile','material','num_bags','lot_number','weight','advance_amount','rate_fixed','amount','bag_data','entry_date'];
+    const allowed = ['serial_number','name','mobile','material','num_bags','lot_number','weight','advance_amount','labour_rate','rate_fixed','amount','bag_data','entry_date'];
     allowed.forEach(f => {
       if (body[f] !== undefined) {
         fields.push(`${f} = ?`);
@@ -453,13 +455,15 @@ app.post('/api/buyers', (req, res) => {
   try {
     const {
       serial_number, name, mobile, material,
-      num_bags, lot_number, weight, advance_amount,
+      num_bags, lot_number, weight, advance_amount, labour_rate,
       entry_date, bag_data
     } = req.body;
 
-    const exists = prepare('SELECT id FROM buyers WHERE serial_number = ? AND entry_date = ?').get(serial_number, entry_date);
+    const materialName = (material || 'GENERAL').toUpperCase();
+
+    const exists = prepare('SELECT id FROM buyers WHERE serial_number = ? AND material = ? AND entry_date = ?').get(serial_number, materialName, entry_date);
     if (exists) {
-      return res.status(400).json({ success: false, error: `Serial number ${serial_number} already used on ${entry_date}.` });
+      return res.status(400).json({ success: false, error: `Serial number ${serial_number} already used for ${materialName} on ${entry_date}.` });
     }
 
     let bagDataStr = '[]';
@@ -469,17 +473,18 @@ app.post('/api/buyers', (req, res) => {
     } catch (e) {}
 
     const result = prepare(`
-      INSERT INTO buyers (serial_number, name, mobile, material, num_bags, lot_number, weight, advance_amount, bag_data, entry_date)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO buyers (serial_number, name, mobile, material, num_bags, lot_number, weight, advance_amount, labour_rate, bag_data, entry_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       serial_number,
       name.toUpperCase(),
       mobile || '0000000000',
-      (material || 'GENERAL').toUpperCase(),
+      materialName,
       num_bags,
       lot_number,
       weight,
       advance_amount || 0,
+      labour_rate || 5,
       bagDataStr,
       entry_date
     );
@@ -496,7 +501,7 @@ app.put('/api/buyers/:id', (req, res) => {
     const fields = [];
     const values = [];
 
-    const allowed = ['serial_number','name','mobile','material','num_bags','lot_number','weight','advance_amount','rate_fixed','amount','bag_data','entry_date'];
+    const allowed = ['serial_number','name','mobile','material','num_bags','lot_number','weight','advance_amount','labour_rate','rate_fixed','amount','extra_bags','extra_bag_amount','bag_data','entry_date'];
     allowed.forEach(f => {
       if (body[f] !== undefined) {
         fields.push(`${f} = ?`);
@@ -556,6 +561,57 @@ app.get('/api/summary', (req, res) => {
     `).all(...params);
 
     res.json({ success: true, data: { sellerStats, buyerStats, materialBreakdown } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BUYER PAYMENTS
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.get('/api/buyer-payments', (req, res) => {
+  try {
+    const { buyer_name } = req.query;
+    const payments = buyer_name
+      ? prepare('SELECT * FROM buyer_payments WHERE buyer_name = ? ORDER BY payment_date DESC, created_at DESC').all(buyer_name)
+      : prepare('SELECT * FROM buyer_payments ORDER BY payment_date DESC, created_at DESC').all();
+    res.json({ success: true, data: payments });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/buyer-payments', (req, res) => {
+  try {
+    const { buyer_name, amount, payment_date, note, bill_date, bill_material } = req.body;
+    if (!buyer_name || !amount || !payment_date) {
+      return res.status(400).json({ success: false, error: 'buyer_name, amount, payment_date are required' });
+    }
+    const result = prepare(
+      'INSERT INTO buyer_payments (buyer_name, amount, payment_date, note, bill_date, bill_material) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(buyer_name.toUpperCase(), Number(amount), payment_date, note || '', bill_date || null, bill_material || null);
+    res.json({ success: true, id: result.lastInsertRowid });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/buyer-payments/:id', (req, res) => {
+  try {
+    const { amount, payment_date, note } = req.body;
+    prepare('UPDATE buyer_payments SET amount = ?, payment_date = ?, note = ? WHERE id = ?')
+      .run(Number(amount), payment_date, note || '', req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/buyer-payments/:id', (req, res) => {
+  try {
+    prepare('DELETE FROM buyer_payments WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

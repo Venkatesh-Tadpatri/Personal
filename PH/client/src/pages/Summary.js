@@ -1708,6 +1708,38 @@ function getSellerGross(seller) {
   return Number(seller.amount) || 0;
 }
 
+const isGroupedSummaryMaterial = (material) => ['GINGER', 'ONION'].includes(material);
+
+function getSummaryBagRows(seller) {
+  let bags = [];
+  try { bags = JSON.parse(seller.bag_data || '[]'); } catch {}
+  if (!isGroupedSummaryMaterial(seller.material)) {
+    return bags.map(b => ({ ...b, bags: 1 }));
+  }
+
+  const grouped = [];
+  bags.forEach(bag => {
+    const last = grouped[grouped.length - 1];
+    const sameGroup = last
+      && (last.lot || seller.lot_number || '') === (bag.lot || seller.lot_number || '')
+      && Math.abs((Number(last._perBagWeight) || 0) - (Number(bag.weight) || 0)) < 0.00001
+      && Number(last.rate || 0) === Number(bag.rate || 0)
+      && (last.rate_mode || last.rateMode || 'PER_100KG') === (bag.rate_mode || bag.rateMode || 'PER_100KG')
+      && (last.buyer || '') === (bag.buyer || '');
+
+    if (!sameGroup) {
+      grouped.push({ ...bag, bags: 1, _perBagWeight: Number(bag.weight) || 0 });
+      return;
+    }
+
+    last.bags += 1;
+    last.weight = (Number(last.weight) || 0) + (Number(bag.weight) || 0);
+    last.amount = (Number(last.amount) || 0) + (Number(bag.amount) || 0);
+  });
+
+  return grouped;
+}
+
 export default function Summary() {
   const [data,       setData]       = useState(null);
   const [sellers,    setSellers]    = useState([]);
@@ -1761,8 +1793,7 @@ export default function Summary() {
   // Build flat rows for CSV
   const tableRows = [];
   sellers.forEach((s, si) => {
-    let bags = [];
-    try { bags = JSON.parse(s.bag_data || '[]'); } catch {}
+    const bags = getSummaryBagRows(s);
     const numBags = parseInt(s.num_bags) || 0;
     const gross = getSellerGross(s);
     const comm  = Math.round(gross * COMM_RATE);
@@ -1778,7 +1809,7 @@ export default function Summary() {
       bags.forEach((b, bi) => {
         tableRows.push({ srno: si+1, lot: b.lot||s.lot_number||'—',
           name: bi===0?s.name:'', material: bi===0?(s.material&&s.material!=='GENERAL'?s.material:'—'):'',
-          bags: bi===0?numBags:'', weight: Number(b.weight)||0,
+          bags: Number(b.bags)||1, weight: Number(b.weight)||0,
           rate: Number(b.rate)||0, amount: Number(b.amount)||0,
           gross: bi===0?gross:'', comm: bi===0?comm:'', adv: bi===0?adv:'', pay: bi===0?pay:'' });
       });
@@ -1819,7 +1850,7 @@ export default function Summary() {
 
     let rowsHtml = '';
     sellers.forEach(function(seller, si) {
-      let bags = []; try { bags = JSON.parse(seller.bag_data||'[]'); } catch(e) {}
+      const bags = getSummaryBagRows(seller);
       const numBags = parseInt(seller.num_bags)||0;
       const mat = seller.material&&seller.material!=='GENERAL'?seller.material:'—';
       const gross = getSellerGross(seller);
@@ -1853,7 +1884,7 @@ export default function Summary() {
         if (bi===0) rowsHtml += '<td rowspan="'+rc+'" style="'+P+'font-weight:800;color:#d97706;text-align:center;vertical-align:middle">'+(si+1)+'</td>';
         if (bi===0) rowsHtml += '<td rowspan="'+rc+'" style="'+P+'font-weight:700;color:#1a1a1a;vertical-align:middle">'+seller.name+'</td>';
         if (bi===0) rowsHtml += '<td rowspan="'+rc+'" style="'+P+'text-align:center;vertical-align:middle">'+mat+'</td>';
-        if (bi===0) rowsHtml += '<td rowspan="'+rc+'" style="'+P+'text-align:center;font-weight:700;vertical-align:middle">'+numBags+'</td>';
+        rowsHtml += '<td style="'+P+'text-align:center;font-weight:700;color:#111">'+(Number(bag.bags)||1)+'</td>';
         rowsHtml += '<td style="'+P+'font-family:monospace;font-weight:700;text-align:center;color:#1e3a5f">'+(bag.lot||seller.lot_number||'—')+'</td>';
         rowsHtml += '<td style="'+P+'text-align:right;font-weight:700;color:#1e40af">'+(w>0?fmtNp(w):'—')+'</td>';
         rowsHtml += '<td style="'+P+'text-align:right;font-weight:700;color:#166534">'+(r>0?fmtNp(r):'—')+'</td>';
@@ -2091,8 +2122,7 @@ export default function Summary() {
                     </thead>
                     <tbody>
                       {sellers.map((seller, si) => {
-                        let bags = [];
-                        try { bags = JSON.parse(seller.bag_data || '[]'); } catch {}
+      const bags = getSummaryBagRows(seller);
                         const numBags = parseInt(seller.num_bags) || 0;
                         const mat = seller.material && seller.material !== 'GENERAL' ? seller.material : '—';
                         const rc = bags.length > 0 ? bags.length : 1;
@@ -2134,7 +2164,7 @@ export default function Summary() {
                               {bi===0 && <td rowSpan={rc} style={{ ...merged, fontWeight:800, color:'var(--accent)', textAlign:'center', fontSize:14 }}>{si+1}</td>}
                               {bi===0 && <td rowSpan={rc} style={{ ...merged, fontWeight:700, color:'var(--text-primary)' }}>{seller.name}</td>}
                               {bi===0 && <td rowSpan={rc} style={{ ...merged, textAlign:'center' }}>{mat!=='—'?<span className={'badge '+badge}>{mat}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>}
-                              {bi===0 && <td rowSpan={rc} style={{ ...merged, textAlign:'center', fontWeight:800, fontSize:14 }}>{numBags}</td>}
+                              <td style={{ ...td, textAlign:'center', fontWeight:800, color:'var(--text-primary)' }}>{Number(bag.bags)||1}</td>
                               <td style={{ ...td, fontFamily:'monospace', fontWeight:700, color:'var(--blue)', textAlign:'center', fontSize:12 }}>{bag.lot||seller.lot_number||'—'}</td>
                               <td style={{ ...td, textAlign:'right', fontWeight:700, color:Number(bag.weight)>0?'var(--blue)':'var(--text-muted)' }}>{Number(bag.weight)>0?fmtNum(bag.weight):'—'}</td>
                               <td style={{ ...td, textAlign:'right', fontWeight:700, color:Number(bag.rate)>0?'var(--green)':'var(--text-muted)' }}>{Number(bag.rate)>0?fmtNum(bag.rate):'—'}</td>

@@ -171,7 +171,7 @@
 // -------------------------------------------------------------------------------------------------------------
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Save, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
 import axios from 'axios';
@@ -208,6 +208,22 @@ export default function BuyerRegistration() {
   const [loading,   setLoading]   = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [errors,    setErrors]    = useState({});
+  const [existingBuyers, setExistingBuyers] = useState([]);
+
+  // Load existing buyers once so short names can be checked for duplicates
+  useEffect(() => {
+    API.get('/api/buyers').then(res => {
+      setExistingBuyers(res.data?.data || []);
+    }).catch(() => {});
+  }, []);
+
+  const shortNameUpper = form.short_name.trim().toUpperCase();
+  const shortNameConflict = shortNameUpper
+    ? existingBuyers.find(b =>
+        (b.lot_number || '').trim().toUpperCase() === shortNameUpper ||
+        (b.serial_number || '').trim().toUpperCase() === shortNameUpper
+      )
+    : null;
 
   const handle = (e) => {
     const { name, value } = e.target;
@@ -216,13 +232,24 @@ export default function BuyerRegistration() {
     if (errors[name]) setErrors(er => ({ ...er, [name]: undefined }));
   };
 
-  const validate = () => ({});
+  const validate = () => {
+    const errs = {};
+    if (shortNameConflict) {
+      errs.short_name = `Already used by ${shortNameConflict.name} — pick a different short name`;
+    }
+    return errs;
+  };
 
   const reset = () => { setForm(emptyForm()); setLastSaved(null); setErrors({}); };
 
   const submit = async (e) => {
     e.preventDefault();
     const errs = validate();
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      toast.error('Please fix the highlighted fields');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -243,6 +270,7 @@ export default function BuyerRegistration() {
       if (res.data.success) {
         toast.success(`${form.name} registered successfully!`);
         setLastSaved({ ...form });
+        setExistingBuyers(prev => [...prev, payload]);
         setForm(emptyForm());
         setErrors({});
       }
@@ -292,13 +320,17 @@ export default function BuyerRegistration() {
               />
             </Field>
 
-            <Field label="Short Name / Nick Name" error={errors.short_name}>
+            <Field
+              label="Short Name / Nick Name"
+              error={errors.short_name || (shortNameConflict ? `Already used by ${shortNameConflict.name}` : undefined)}
+            >
               <input
                 className="form-input"
                 name="short_name"
                 value={form.short_name}
                 onChange={handle}
                 placeholder="e.g. RAJU, KUMAR"
+                style={shortNameConflict ? { borderColor: 'var(--red)', boxShadow: '0 0 0 3px var(--red-dim)' } : undefined}
               />
             </Field>
 
@@ -349,7 +381,7 @@ export default function BuyerRegistration() {
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
+            <button type="submit" className="btn btn-primary btn-lg" disabled={loading || !!shortNameConflict}>
               <Save size={16} /> {loading ? 'Registering...' : 'Register Buyer'}
             </button>
             <button type="button" className="btn btn-secondary btn-lg" onClick={reset}>

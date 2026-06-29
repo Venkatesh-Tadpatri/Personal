@@ -710,10 +710,10 @@
 // ----------------------------------------------------------------------------------------------------------------------
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Save, RotateCcw, CheckCircle, AlertCircle, Package } from 'lucide-react';
-import { createSeller } from '../api';
+import { Save, RotateCcw, RefreshCw, CheckCircle, AlertCircle, Package } from 'lucide-react';
+import { createSeller, getSellers } from '../api';
 import { MATERIALS, todayISO, toUpper } from '../utils';
 
 const emptyForm = () => ({
@@ -749,9 +749,42 @@ export default function SellerRegistration() {
   const [loading,    setLoading]    = useState(false);
   const [lastSaved,  setLastSaved]  = useState(null);
   const [errors,     setErrors]     = useState({});
+  const [sellerHistory, setSellerHistory] = useState([]); // [{ name, mobile }] from past registrations
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
+
+  // Load past sellers once so the name field can suggest known sellers
+  useEffect(() => {
+    getSellers().then(res => {
+      const rows = res.data?.data || [];
+      const seen = new Map();
+      rows.forEach(s => {
+        if (!seen.has(s.name)) seen.set(s.name, s.mobile); // rows are newest-first, keep latest mobile
+      });
+      setSellerHistory(Array.from(seen, ([name, mobile]) => ({ name, mobile })));
+    }).catch(() => {});
+  }, []);
+
+  const nameQuery = form.name.trim();
+  const nameSuggestions = (nameQuery
+    ? sellerHistory.filter(s => s.name.includes(nameQuery))
+    : sellerHistory
+  ).slice(0, 8);
+
+  const selectSellerSuggestion = (s) => {
+    setForm(f => ({
+      ...f,
+      name: s.name,
+      mobile: s.mobile && s.mobile !== '0000000000' ? s.mobile : '',
+    }));
+    setShowNameSuggestions(false);
+    if (errors.name) setErrors(er => ({ ...er, name: undefined }));
+  };
 
   const numBags  = parseInt(form.num_bags) || 0;
-  const isGinger = form.material === 'GINGER';
+  const isGroupedMaterial = ['GINGER', 'ONION'].includes(form.material);
+  const groupedMaterialLabel = form.material
+    ? form.material.charAt(0) + form.material.slice(1).toLowerCase()
+    : 'Grouped';
   const lotLabel = numBags > 0 && form.serial_number
     ? `${form.serial_number}/${numBags}`
     : (form.serial_number ? `${form.serial_number}/?` : '?/?');
@@ -776,7 +809,7 @@ export default function SellerRegistration() {
     if (name === 'material') {
       const n = parseInt(form.num_bags) || 0;
       if (n >= 1 && n <= 100) {
-        if (value === 'GINGER') {
+        if (['GINGER', 'ONION'].includes(value)) {
           setBagWeights([{ weight: '', bags: n }]);
         } else {
           setBagWeights(Array.from({ length: n }, () => ({ weight: '' })));
@@ -852,9 +885,9 @@ export default function SellerRegistration() {
       const lot_number = `${form.serial_number}/${numBags}`;
 
       // ✅ Build bag_data with actual weights
-      // For GINGER: each group row is expanded into individual bag entries (weight split equally)
+      // For grouped materials: each group row is expanded into individual bag entries (weight split equally)
       let bagDataArray;
-      if (isGinger) {
+      if (isGroupedMaterial) {
         bagDataArray = [];
         bagWeights.forEach((b) => {
           const bagsInGroup  = b.bags || 0;
@@ -893,6 +926,10 @@ export default function SellerRegistration() {
       if (res.data.success) {
         toast.success(`${form.name} registered! Total: ${totalWeight.toFixed(2)} kg`);
         setLastSaved({ ...form, weight: totalWeight, lot_number, id: res.data.id });
+        setSellerHistory(prev => [
+          { name: form.name, mobile: form.mobile || '0000000000' },
+          ...prev.filter(s => s.name !== form.name),
+        ]);
         setForm(emptyForm());
         setBagWeights([]);
         setErrors({});
@@ -915,6 +952,9 @@ export default function SellerRegistration() {
           <div className="page-title">Seller Registration</div>
           <div className="page-subtitle">Register a new agricultural produce seller</div>
         </div>
+        <button className="btn btn-secondary" onClick={reset} type="button" title="Clear all fields">
+          <RefreshCw size={15} /> Refresh
+        </button>
       </div>
 
       {lastSaved && (
@@ -937,8 +977,31 @@ export default function SellerRegistration() {
             </Field>
 
             <Field label="Seller Name" required error={errors.name}>
-              <input className="form-input" name="name" value={form.name}
-                onChange={handle} placeholder="FULL NAME" style={errStyle('name')} />
+              <div style={{ position: 'relative' }}>
+                <input className="form-input" name="name" value={form.name}
+                  onChange={handle}
+                  onFocus={() => setShowNameSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowNameSuggestions(false), 150)}
+                  placeholder="FULL NAME" autoComplete="off" style={errStyle('name')} />
+                {showNameSuggestions && nameSuggestions.length > 0 && (
+                  <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, zIndex:20, background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, boxShadow:'0 10px 30px rgba(0,0,0,0.35)', maxHeight:220, overflowY:'auto' }}>
+                    {nameSuggestions.map((s, i) => (
+                      <div
+                        key={`${s.name}-${i}`}
+                        onMouseDown={() => selectSellerSuggestion(s)}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-panel)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        style={{ padding:'9px 14px', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, fontSize:13, borderBottom: i < nameSuggestions.length - 1 ? '1px solid var(--border)' : 'none' }}
+                      >
+                        <span style={{ fontWeight:700, color:'var(--text-primary)' }}>{s.name}</span>
+                        {s.mobile && s.mobile !== '0000000000' && (
+                          <span style={{ color:'var(--text-muted)', fontSize:12 }}>{s.mobile}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Field>
 
             <Field label="Mobile Number">
@@ -960,8 +1023,8 @@ export default function SellerRegistration() {
                 onBlur={e => {
                   const n = parseInt(e.target.value) || 0;
                   if (n >= 1 && n <= 100) {
-                    if (isGinger) {
-                      // Ginger: keep existing groups (capped to n), redistribute bags
+                    if (isGroupedMaterial) {
+                      // Grouped materials: keep existing groups (capped to n), redistribute bags
                       setBagWeights(prev => {
                         const capped = prev.slice(0, Math.min(prev.length, n));
                         const base   = capped.length > 0 ? capped : [{ weight: '', bags: n }];
@@ -1000,10 +1063,10 @@ export default function SellerRegistration() {
                 <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                   <Package size={18} style={{ color:'var(--accent)' }} />
                   <span style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:15, color:'var(--text-primary)' }}>
-                    {isGinger ? 'Ginger Weight Entry' : 'Bag-wise Weight Entry'}
+                    {isGroupedMaterial ? `${groupedMaterialLabel} Weight Entry` : 'Bag-wise Weight Entry'}
                   </span>
                   <span style={{ fontSize:12, color:'var(--accent)', background:'var(--accent-dim)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:20, padding:'2px 12px', fontWeight:700 }}>
-                    {isGinger
+                    {isGroupedMaterial
                       ? `${numBags} bags · ${bagWeights.length} group${bagWeights.length > 1 ? 's' : ''} · Lot ${lotLabel}`
                       : `${numBags} bags · Lot ${lotLabel}`}
                   </span>
@@ -1021,7 +1084,7 @@ export default function SellerRegistration() {
                 </div>
               )}
 
-              {isGinger ? (
+              {isGroupedMaterial ? (
                 /* ── GINGER MODE: group rows ── */
                 <>
                   {/* Header */}
@@ -1120,7 +1183,7 @@ export default function SellerRegistration() {
                   )}
 
                   <div style={{ marginTop:10, padding:'10px 14px', background:'var(--blue-dim)', border:'1px solid rgba(59,130,246,0.25)', borderRadius:8, fontSize:12, color:'var(--blue)' }}>
-                    💡 Ginger bags share the same quality &amp; rate. Add groups only if different batches need separate weights. After auction, go to <strong>Seller List → Edit</strong> to set the rate.
+                    💡 {groupedMaterialLabel} bags share the same quality &amp; rate. Add groups only if different batches need separate weights. After auction, go to <strong>Seller List → Edit</strong> to set the rate.
                   </div>
                 </>
               ) : (
@@ -1216,12 +1279,6 @@ export default function SellerRegistration() {
           </div>
         </form>
       </div>
-
-      <style>{`
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
-        input[type=number] { -moz-appearance:textfield; }
-      `}</style>
     </div>
   );
 }

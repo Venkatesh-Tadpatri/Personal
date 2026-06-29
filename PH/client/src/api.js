@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// In development React uses proxy (client/package.json -> "proxy": "http://localhost:5000")
-// In production Electron loads the built React app and talks directly to server on 5000
+// Electron and the React dev server both talk directly to the local API server.
 const BASE = 'http://127.0.0.1:5000';
 
 const api = axios.create({

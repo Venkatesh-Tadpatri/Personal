@@ -246,15 +246,18 @@ import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-route
 import { Toaster } from 'react-hot-toast';
 import {
   LayoutDashboard, UserPlus, Users, ShoppingCart, List, BarChart3,
-  Wheat, ChevronRight, LogOut, TrendingUp  
+  Wheat, ChevronRight, LogOut, TrendingUp, BookOpen, History
 } from 'lucide-react';
-import SalesReport from './pages/SalesReport';  
+import SalesReport from './pages/SalesReport';
 import Dashboard from './pages/Dashboard';
 import SellerRegistration from './pages/SellerRegistration';
 import SellerList from './pages/SellerList';
+import SellerHistory from './pages/SellerHistory';
 import BuyerRegistration from './pages/BuyerRegistration';
 import BuyerList from './pages/BuyerList';
 import Summary from './pages/Summary';
+import BuyerSummary from './pages/BuyerSummary';
+import BuyerLedger from './pages/BuyerLedger';
 import Login from './pages/Login';
 import './App.css';
 
@@ -262,10 +265,13 @@ const NAV_ITEMS = [
   { label: 'Dashboard',          icon: LayoutDashboard, path: '/',                    section: 'OVERVIEW' },
   { label: 'Seller Registration', icon: UserPlus,        path: '/seller-registration', section: 'SELLERS'  },
   { label: 'Seller List',         icon: Users,           path: '/seller-list',         section: 'SELLERS'  },
+  { label: 'Seller History',      icon: History,         path: '/seller-history',      section: 'SELLERS'  },
   { label: 'Buyer Registration',  icon: ShoppingCart,    path: '/buyer-registration',  section: 'BUYERS'   },
   { label: 'Buyer List',          icon: List,            path: '/buyer-list',          section: 'BUYERS'   },
-  { label: 'Summary',             icon: BarChart3,       path: '/summary',             section: 'REPORTS'  },
-  { label: 'Sales Report', icon: TrendingUp, path: '/sales-report', section: 'REPORTS' },
+  { label: 'Seller Summary',       icon: BarChart3,       path: '/summary',              section: 'REPORTS'  },
+  { label: 'Buyer Summary',       icon: ShoppingCart,    path: '/buyer-summary',        section: 'REPORTS'  },
+  { label: 'Buyer Ledger',        icon: BookOpen,        path: '/buyer-ledger',         section: 'REPORTS'  },
+  { label: 'Sales Report',        icon: TrendingUp,      path: '/sales-report',         section: 'REPORTS'  },
 ];
 
 function Sidebar({ user, onLogout }) {
@@ -394,10 +400,13 @@ const PAGE_TITLES = {
   '/':                    'Dashboard',
   '/seller-registration': 'Seller Registration',
   '/seller-list':         'Seller List',
+  '/seller-history':      'Seller History',
   '/buyer-registration':  'Buyer Registration',
   '/buyer-list':          'Buyer List',
-  '/summary':             'Summary Report',
-  '/sales-report': 'Sales Report'
+  '/summary':             'Seller Summary',
+  '/buyer-summary':       'Buyer Summary',
+  '/buyer-ledger':        'Buyer Ledger',
+  '/sales-report':        'Sales Report'
 };
 
 function AppLayout({ user, onLogout }) {
@@ -438,10 +447,13 @@ function AppLayout({ user, onLogout }) {
             <Route path="/"                    element={<Dashboard />} />
             <Route path="/seller-registration" element={<SellerRegistration />} />
             <Route path="/seller-list"         element={<SellerList />} />
+            <Route path="/seller-history"      element={<SellerHistory />} />
             <Route path="/buyer-registration"  element={<BuyerRegistration />} />
             <Route path="/buyer-list"          element={<BuyerList />} />
             <Route path="/summary"             element={<Summary />} />
-            <Route path="/sales-report" element={<SalesReport />} />
+            <Route path="/buyer-summary"       element={<BuyerSummary />} />
+            <Route path="/buyer-ledger"        element={<BuyerLedger />} />
+            <Route path="/sales-report"        element={<SalesReport />} />
           </Routes>
         </div>
       </div>

@@ -13,9 +13,74 @@ const API = axios.create({ baseURL: 'http://127.0.0.1:5000' });
 //   Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const inr = (v) => Math.round(Number(v || 0)).toLocaleString('en-IN');
+const buyerLabourRate = (buyer) => Number(buyer?.labour_rate ?? 5) || 0;
+const buyerExtraBags = (buyer) => Number(buyer?.extra_bags || 0) || 0;
+const buyerExtraBagAmount = (buyer) => Number(buyer?.extra_bag_amount || 0) || 0;
+
+const isGroupedMaterial = (material) => ['GINGER', 'ONION'].includes(material);
+const rowBagCount = (r) => Number(r.bag.bags || 1);
+const rowsBagTotal = (rows) => rows.reduce((s, r) => s + rowBagCount(r), 0);
+
+export function groupBuyerRows(rows) {
+  const grouped = [];
+
+  rows.forEach(row => {
+    if (!isGroupedMaterial(row.seller.material)) {
+      grouped.push({ ...row, bag: { ...row.bag, bags: 1 } });
+      return;
+    }
+
+    const last = grouped[grouped.length - 1];
+    const sameGroup = last
+      && isGroupedMaterial(last.seller.material)
+      && last.seller.id === row.seller.id
+      && (last.bag.lot || last.seller.lot_number || '') === (row.bag.lot || row.seller.lot_number || '')
+      && Number(last.bag.rate || 0) === Number(row.bag.rate || 0)
+      && (last.bag.rate_mode || last.bag.rateMode || 'PER_100KG') === (row.bag.rate_mode || row.bag.rateMode || 'PER_100KG')
+      && (last.bag.buyer || '').toUpperCase() === (row.bag.buyer || '').toUpperCase();
+
+    if (!sameGroup) {
+      grouped.push({ ...row, bag: { ...row.bag, bags: rowBagCount(row) } });
+      return;
+    }
+
+    last.bag = {
+      ...last.bag,
+      bags: rowBagCount(last) + rowBagCount(row),
+      weight: (Number(last.bag.weight) || 0) + (Number(row.bag.weight) || 0),
+      amount: (Number(last.bag.amount) || 0) + (Number(row.bag.amount) || 0),
+    };
+  });
+
+  return grouped;
+}
+
+function materialAverageRows(rows) {
+  const byMaterial = new Map();
+
+  rows.forEach(r => {
+    const material = r.seller.material || 'GENERAL';
+    if (!byMaterial.has(material)) {
+      byMaterial.set(material, { material, weight: 0, amount: 0 });
+    }
+    const entry = byMaterial.get(material);
+    entry.weight += Number(r.bag.weight) || 0;
+    entry.amount += Number(r.bag.amount) || 0;
+  });
+
+  return Array.from(byMaterial.values()).filter(entry => entry.weight > 0);
+}
+
+function materialAverageRowsHtml(rows) {
+  return materialAverageRows(rows).map(entry => `
+      <tr>
+        <td class="deduct-label">Avg. Rate per KG - ${entry.material}</td>
+        <td class="deduct-value" style="color:#166534">&#8377; ${(entry.amount / entry.weight).toFixed(2)} / kg</td>
+      </tr>`).join('');
+}
 
 // ─── Number to Indian Words ───────────────────────────────────
-function toIndianWords(amount) {
+export function toIndianWords(amount) {
   const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine',
     'Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
   const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
@@ -36,14 +101,13 @@ function toIndianWords(amount) {
 }
 
 // ─── Shared bill CSS — Optimized for physical A5 printer output ─────
-const BILL_CSS = `
+export const BILL_CSS = `
   @page {
-    size: A5 portrait;
     margin: 5mm 5mm 5mm 5mm;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
-    width: 138mm;
+    width: 100%;
     font-family: Arial, sans-serif;
     font-size: 9px;
     color: #111;
@@ -56,7 +120,8 @@ const BILL_CSS = `
   table { width: 100%; border-collapse: collapse; }
 
   .page-wrapper {
-    width: 138mm;
+    width: 100%;
+    max-width: 100%;
     border: 2px solid #93c5fd;
     border-radius: 3px;
     padding: 6px;
@@ -101,27 +166,32 @@ const BILL_CSS = `
 
   @media print {
     html, body {
-      width: 138mm;
+      width: 100%;
       margin: 0;
       padding: 0;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
     .page-wrapper {
-      width: 138mm;
+      width: 100%;
+      max-width: 100%;
       page-break-inside: avoid;
     }
   }
 `;
 
 // ─── Build printable bill HTML ────────────────────────────────
-function buildBuyerBillHtml({ buyer, sellerRows, advance }) {
+export function buildBuyerBillHtml({ buyer, sellerRows, advance }) {
   const totalWeight = sellerRows.reduce((s, r) => s + (Number(r.bag.weight) || 0), 0);
   const totalAmount = sellerRows.reduce((s, r) => s + (Number(r.bag.amount) || 0), 0);
-  const totalBags   = sellerRows.length;
-  const avgRate     = totalWeight > 0 ? totalAmount / totalWeight : 0;
-  const labourAmt   = totalBags * 5;
-  const balance     = totalAmount + labourAmt;
+  const totalBags   = rowsBagTotal(sellerRows);
+  const labourRate  = buyerLabourRate(buyer);
+  const labourAmt   = totalBags * labourRate;
+  const marketFee   = Math.round(totalAmount * 0.01);
+  const extraBags      = buyerExtraBags(buyer);
+  const extraBagRate   = buyerExtraBagAmount(buyer);
+  const extraBagAmt    = extraBags * extraBagRate;
+  const balance     = totalAmount + labourAmt + marketFee + extraBagAmt;
   const fmtBillDate = (d) => {
     if (!d) return '—';
     const dt = new Date(d + 'T00:00:00');
@@ -134,7 +204,7 @@ function buildBuyerBillHtml({ buyer, sellerRows, advance }) {
       <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8.5px;color:#111;font-weight:600">${String(i+1).padStart(3,'0')}</td>
       <td style="border:1px solid #b8cef0;padding:3px 5px;text-align:left;font-size:8.5px;font-weight:700;color:#111">${r.seller.material}</td>
       <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8px;font-family:monospace;color:#111;font-weight:600">${r.bag.lot || r.seller.lot_number || '—'}</td>
-      <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8.5px;font-weight:700;color:#111">1</td>
+      <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8.5px;font-weight:700;color:#111">${rowBagCount(r)}</td>
       <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8.5px;font-weight:800;color:#111">${Number(r.bag.weight)>0?r.bag.weight:'—'}</td>
       <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8.5px;font-weight:800;color:#111">${Number(r.bag.rate)>0?Number(r.bag.rate).toLocaleString('en-IN'):'—'}</td>
       <td style="border:1px solid #b8cef0;padding:3px 5px;text-align:right;font-size:8.5px;font-weight:800;color:#1e40af">${Number(r.bag.amount)>0?inr(r.bag.amount):'—'}</td>
@@ -198,14 +268,20 @@ function buildBuyerBillHtml({ buyer, sellerRows, advance }) {
 
   <table class="deduct-table" style="margin-top:2px">
     <tbody>
+      ${materialAverageRowsHtml(sellerRows)}
       <tr>
-        <td class="deduct-label">Avg. Rate per KG (Total)</td>
-        <td class="deduct-value" style="color:#166534">&#8377; ${avgRate > 0 ? Number(avgRate).toFixed(2) : '—'} / kg</td>
-      </tr>
-      <tr>
-        <td class="deduct-label">Labour Charges (&#8377;)</td>
+        <td class="deduct-label">Labour Charges (&#8377;${inr(labourRate)} × ${totalBags} bags)</td>
         <td class="deduct-value" style="color:#dc2626">+ &#8377; ${inr(labourAmt)}</td>
       </tr>
+      <tr>
+        <td class="deduct-label">Market Fees (1%)</td>
+        <td class="deduct-value" style="color:#b45309">+ &#8377; ${inr(marketFee)}</td>
+      </tr>
+      ${extraBags > 0 ? `
+      <tr>
+        <td class="deduct-label">Extra Bag Charges (&#8377;${inr(extraBagRate)} × ${extraBags} bags)</td>
+        <td class="deduct-value" style="color:#dc2626">+ &#8377; ${inr(extraBagAmt)}</td>
+      </tr>` : ''}
       <tr class="net-row">
         <td class="net-label">TOTAL AMOUNT</td>
         <td class="net-value">&#8377; ${inr(Math.max(0,balance))}</td>
@@ -235,10 +311,14 @@ function buildMultipleBuyerBillsHtml({ buyersData }) {
   const billsHtml = buyersData.map(({ buyer, rows: sellerRows }, billIdx) => {
     const totalWeight = sellerRows.reduce((s, r) => s + (Number(r.bag.weight) || 0), 0);
     const totalAmount = sellerRows.reduce((s, r) => s + (Number(r.bag.amount) || 0), 0);
-    const totalBags   = sellerRows.length;
-    const avgRate     = totalWeight > 0 ? totalAmount / totalWeight : 0;
-    const labourAmt   = totalBags * 5;
-    const balance     = totalAmount + labourAmt;
+    const totalBags   = rowsBagTotal(sellerRows);
+    const labourRate  = buyerLabourRate(buyer);
+    const labourAmt   = totalBags * labourRate;
+    const marketFee   = Math.round(totalAmount * 0.01);
+    const extraBags     = buyerExtraBags(buyer);
+    const extraBagRate  = buyerExtraBagAmount(buyer);
+    const extraBagAmt   = extraBags * extraBagRate;
+    const balance     = totalAmount + labourAmt + marketFee + extraBagAmt;
     const fmtBillDate = (d) => {
       if (!d) return '—';
       const dt = new Date(d + 'T00:00:00');
@@ -251,7 +331,7 @@ function buildMultipleBuyerBillsHtml({ buyersData }) {
         <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8.5px;color:#111;font-weight:600">${String(i+1).padStart(3,'0')}</td>
         <td style="border:1px solid #b8cef0;padding:3px 5px;text-align:left;font-size:8.5px;font-weight:700;color:#111">${r.seller.material}</td>
         <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8px;font-family:monospace;color:#111;font-weight:600">${r.bag.lot || r.seller.lot_number || '—'}</td>
-        <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8.5px;font-weight:700;color:#111">1</td>
+        <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8.5px;font-weight:700;color:#111">${rowBagCount(r)}</td>
         <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8.5px;font-weight:800;color:#111">${Number(r.bag.weight)>0?r.bag.weight:'—'}</td>
         <td style="border:1px solid #b8cef0;padding:3px 3px;text-align:center;font-size:8.5px;font-weight:800;color:#111">${Number(r.bag.rate)>0?Number(r.bag.rate).toLocaleString('en-IN'):'—'}</td>
         <td style="border:1px solid #b8cef0;padding:3px 5px;text-align:right;font-size:8.5px;font-weight:800;color:#1e40af">${Number(r.bag.amount)>0?Math.round(r.bag.amount).toLocaleString('en-IN'):'—'}</td>
@@ -303,14 +383,20 @@ function buildMultipleBuyerBillsHtml({ buyersData }) {
         </table>
         <table class="deduct-table" style="margin-top:2px">
           <tbody>
+            ${materialAverageRowsHtml(sellerRows)}
             <tr>
-              <td class="deduct-label">Avg. Rate per KG</td>
-              <td class="deduct-value" style="color:#166534">&#8377; ${avgRate>0?Number(avgRate).toFixed(2):'—'} / kg</td>
-            </tr>
-            <tr>
-              <td class="deduct-label">Labour Charges (&#8377;5 × ${totalBags} bags)</td>
+              <td class="deduct-label">Labour Charges (&#8377;${inr(labourRate)} × ${totalBags} bags)</td>
               <td class="deduct-value" style="color:#dc2626">+ &#8377; ${inr(labourAmt)}</td>
             </tr>
+            <tr>
+              <td class="deduct-label">Market Fees (1%)</td>
+              <td class="deduct-value" style="color:#b45309">+ &#8377; ${inr(marketFee)}</td>
+            </tr>
+            ${extraBags > 0 ? `
+            <tr>
+              <td class="deduct-label">Extra Bag Charges (&#8377;${inr(extraBagRate)} × ${extraBags} bags)</td>
+              <td class="deduct-value" style="color:#dc2626">+ &#8377; ${inr(extraBagAmt)}</td>
+            </tr>` : ''}
             <tr class="net-row">
               <td class="net-label">TOTAL AMOUNT</td>
               <td class="net-value">&#8377; ${Math.round(Math.max(0,balance)).toLocaleString('en-IN')}</td>
@@ -331,7 +417,7 @@ function buildMultipleBuyerBillsHtml({ buyersData }) {
 <head>
   <meta charset="UTF-8">
   <title>Buyer Bills</title>
-  <style>${BILL_CSS.replace('@page {', '@page { size: A5 portrait;')}</style>
+  <style>${BILL_CSS}</style>
 </head>
 <body>
 ${billsHtml}
@@ -369,7 +455,7 @@ function buildAllBuyersBillHtml({ buyersData, date }) {
 
   buyersData.forEach(({ buyer, rows }) => {
     if (rows.length === 0) return;
-    const tBags = rows.length;
+    const tBags = rowsBagTotal(rows);
     const tWeight = rows.reduce((s, r) => s + (Number(r.bag.weight) || 0), 0);
     grandBags += tBags; grandWeight += tWeight;
 
@@ -378,7 +464,7 @@ function buildAllBuyersBillHtml({ buyersData, date }) {
         <td style="text-align:center;font-weight:700">${String(i+1).padStart(3,'0')}</td>
         <td style="font-weight:700">${r.seller.material || '—'}</td>
         <td style="text-align:center;font-family:monospace;font-weight:700">${r.bag.lot || r.seller.lot_number || '—'}</td>
-        <td style="text-align:center">1</td>
+        <td style="text-align:center">${rowBagCount(r)}</td>
         <td style="text-align:center;font-weight:800">${Number(r.bag.weight)>0?r.bag.weight:'—'}</td>
         <td style="text-align:center;font-weight:800">${Number(r.bag.rate)>0?Number(r.bag.rate).toLocaleString('en-IN'):'—'}</td>
       </tr>`).join('');
@@ -437,12 +523,15 @@ function buildAllBuyersBillHtml({ buyersData, date }) {
 }
 
 // ─── Fetch bags assigned to one buyer from all sellers ────────
-async function fetchBuyerPurchases(buyerKey, date) {
+// `material`, when given, restricts the result to purchases of that one material —
+// used to build a separate bill per material instead of one merged bill.
+async function fetchBuyerPurchases(buyerKey, date, material) {
   const params = date ? { date } : {};
   const res = await API.get('/api/sellers', { params });
   const sellers = res.data.data || [];
   const rows = [];
   sellers.forEach(seller => {
+    if (material && seller.material !== material) return;
     let bags = [];
     try { bags = JSON.parse(seller.bag_data || '[]'); } catch {}
     bags.forEach((bag, idx) => {
@@ -454,9 +543,11 @@ async function fetchBuyerPurchases(buyerKey, date) {
   rows.sort((a, b) => {
     const parseLot = r => { const [x, y] = (r.bag.lot || r.seller.lot_number || '').split('/').map(Number); return [isNaN(x) ? 0 : x, isNaN(y) ? 0 : y]; };
     const [aX, aY] = parseLot(a); const [bX, bY] = parseLot(b);
-    return aX !== bX ? aX - bX : aY - bY;
+    if (aX !== bX) return aX - bX;
+    if (aY !== bY) return aY - bY;
+    return (a.bagIndex || 0) - (b.bagIndex || 0);
   });
-  return rows;
+  return groupBuyerRows(rows);
 }
 
 // ─── Fetch all sellers once → build stats map for every buyer ─
@@ -471,17 +562,28 @@ async function fetchAllBuyerStats(date) {
     bags.forEach(bag => {
       if (!bag.buyer) return;
       const key = bag.buyer.toUpperCase();
-      if (!stats[key]) stats[key] = { bags: 0, weight: 0, amount: 0 };
+      if (!stats[key]) stats[key] = { bags: 0, weight: 0, amount: 0, materials: new Set(), byMaterial: {} };
       stats[key].bags   += 1;
       stats[key].weight += Number(bag.weight) || 0;
       stats[key].amount += Number(bag.amount) || 0;
+      const mat = seller.material && seller.material !== 'GENERAL' ? seller.material : null;
+      if (mat) {
+        stats[key].materials.add(mat);
+        if (!stats[key].byMaterial[mat]) stats[key].byMaterial[mat] = { bags: 0, weight: 0, amount: 0 };
+        stats[key].byMaterial[mat].bags   += 1;
+        stats[key].byMaterial[mat].weight += Number(bag.weight) || 0;
+        stats[key].byMaterial[mat].amount += Number(bag.amount) || 0;
+      }
     });
   });
+  Object.values(stats).forEach(s => { s.materials = Array.from(s.materials).sort(); });
   return stats;
 }
 
 // ─── Purchases Modal (View) ───────────────────────────────────
-function PurchasesModal({ buyer, filterDate, onClose, onUpdate }) {
+// `material` + `includeExtraCharge`: see handleDirectPrint above — same reasoning applies
+// when viewing a buyer who purchased more than one material (separate bill per material).
+function PurchasesModal({ buyer, filterDate, material, includeExtraCharge = true, onClose, onUpdate }) {
   const printRef = useRef();
   const [sellerRows, setSellerRows] = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -491,22 +593,27 @@ function PurchasesModal({ buyer, filterDate, onClose, onUpdate }) {
 
   useEffect(() => {
     setLoading(true);
-    fetchBuyerPurchases(buyerKey, filterDate)
+    fetchBuyerPurchases(buyerKey, filterDate, material)
       .then(rows => setSellerRows(rows))
       .catch(err => toast.error('Failed to load: ' + (err.message || '')))
       .finally(() => setLoading(false));
-  }, [buyerKey]);
+  }, [buyerKey, material]);
 
   const totalWeight = sellerRows.reduce((s, r) => s + (Number(r.bag.weight) || 0), 0);
   const totalAmount = sellerRows.reduce((s, r) => s + (Number(r.bag.amount) || 0), 0);
-  const totalBags   = sellerRows.length;
-  const avgRate     = totalWeight > 0 ? totalAmount / totalWeight : 0;
-  const labourAmt   = totalBags * 5;
-  const balance     = totalAmount + labourAmt;
+  const totalBags   = rowsBagTotal(sellerRows);
+  const avgRows     = materialAverageRows(sellerRows);
+  const labourRate  = buyerLabourRate(buyer);
+  const labourAmt   = totalBags * labourRate;
+  const marketFee   = Math.round(totalAmount * 0.01);
+  const extraBags     = includeExtraCharge ? buyerExtraBags(buyer) : 0;
+  const extraBagRate  = buyerExtraBagAmount(buyer);
+  const extraBagAmt   = extraBags * extraBagRate;
+  const balance     = totalAmount + labourAmt + marketFee + extraBagAmt;
 
   const handlePrint = () => {
-    // const html = buildBuyerBillHtml({ buyer, sellerRows, advance });
-    const html = buildBuyerBillHtml({ buyer: { ...buyer, bill_date: filterDate }, sellerRows, advance });
+    const billBuyer = includeExtraCharge ? buyer : { ...buyer, extra_bags: 0 };
+    const html = buildBuyerBillHtml({ buyer: { ...billBuyer, bill_date: filterDate }, sellerRows, advance });
     const w = window.open('', '_blank', 'width=700,height=900');
     w.document.write(html); w.document.close();
   };
@@ -516,11 +623,11 @@ function PurchasesModal({ buyer, filterDate, onClose, onUpdate }) {
       <div className="modal" style={{ maxWidth:620, width:'96%', padding:0, overflow:'hidden', borderRadius:10 }} onClick={e => e.stopPropagation()}>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', background:'#dbeafe', color:'#1e3a8a' }}>
-          <span style={{ fontWeight:700, fontSize:14 }}>🧾 Buyer Bill — {buyer.name}{buyer.lot_number && buyer.lot_number !== '—' ? ` (${buyer.lot_number})` : ''}</span>
+          <span style={{ fontWeight:700, fontSize:14 }}>🧾 Buyer Bill — {buyer.name}{buyer.lot_number && buyer.lot_number !== '—' ? ` (${buyer.lot_number})` : ''}{material ? ` — ${material}` : ''}</span>
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={handlePrint} disabled={loading || sellerRows.length===0}
               style={{ background:'#fff', color:'#1e40af', border:'1px solid #93c5fd', borderRadius:6, padding:'5px 13px', fontWeight:700, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:5, opacity:(loading||sellerRows.length===0)?0.5:1 }}>
-              <Printer size={13} /> Print / PDF (A5)
+              <Printer size={13} /> Print / PDF
             </button>
             <button onClick={onClose} style={{ background:'transparent', border:'none', color:'#1e3a8a', cursor:'pointer' }}><X size={18} /></button>
           </div>
@@ -587,7 +694,7 @@ function PurchasesModal({ buyer, filterDate, onClose, onUpdate }) {
                           <td style={td({ textAlign:'center', fontWeight:700 })}>{String(i+1).padStart(3,'0')}</td>
                           <td style={td({ textAlign:'left',   fontWeight:700, padding:'4px 5px' })}>{r.seller.material}</td>
                           <td style={td({ textAlign:'center', fontWeight:600, fontFamily:'monospace' })}>{r.bag.lot || r.seller.lot_number || '—'}</td>
-                          <td style={td({ textAlign:'center', fontWeight:700 })}>1</td>
+                          <td style={td({ textAlign:'center', fontWeight:700 })}>{rowBagCount(r)}</td>
                           <td style={td({ textAlign:'center', fontWeight:800 })}>{Number(r.bag.weight)>0 ? r.bag.weight : '—'}</td>
                           <td style={td({ textAlign:'center', fontWeight:800 })}>{Number(r.bag.rate)>0 ? Number(r.bag.rate).toLocaleString('en-IN') : '—'}</td>
                           <td style={td({ textAlign:'right',  fontWeight:800, color:'#1e40af', padding:'4px 5px' })}>{Number(r.bag.amount)>0 ? inr(r.bag.amount) : '—'}</td>
@@ -609,13 +716,25 @@ function PurchasesModal({ buyer, filterDate, onClose, onUpdate }) {
                 {/* Deductions */}
                 <table style={{ width:'100%', borderCollapse:'collapse', marginTop:2, position:'relative', zIndex:1 }}>
                   <tbody>
+                    {avgRows.map(row => (
+                      <tr key={row.material}>
+                        <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, background:'#eff6ff', fontWeight:700, color:'#1e40af', width:'58%' }}>Avg. Rate per KG - {row.material}</td>
+                        <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, textAlign:'right', fontWeight:700, color:'#166534' }}>₹ {(row.amount / row.weight).toFixed(2)} / kg</td>
+                      </tr>
+                    ))}
                     <tr>
-                      <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, background:'#eff6ff', fontWeight:700, color:'#1e40af', width:'58%' }}>Avg. Rate per KG</td>
-                      <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, textAlign:'right', fontWeight:700, color:'#166534' }}>₹ {avgRate>0?Number(avgRate).toFixed(2):'—'} / kg</td>
-                    </tr>
-                    <tr>
-                      <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, background:'#eff6ff', fontWeight:700, color:'#1e40af' }}>Labour Charges </td>
+                      <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, background:'#eff6ff', fontWeight:700, color:'#1e40af' }}>Labour Charges (₹{inr(labourRate)} × {totalBags} bags)</td>
                       <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, textAlign:'right', fontWeight:700, color:'#dc2626' }}>+ ₹ {inr(labourAmt)}</td>
+                    </tr>
+                    {extraBags > 0 && (
+                      <tr>
+                        <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, background:'#eff6ff', fontWeight:700, color:'#1e40af' }}>Extra Bag Charges (₹{inr(extraBagRate)} × {extraBags} bags)</td>
+                        <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, textAlign:'right', fontWeight:700, color:'#dc2626' }}>+ ₹ {inr(extraBagAmt)}</td>
+                      </tr>
+                    )}
+                    <tr>
+                      <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, background:'#eff6ff', fontWeight:700, color:'#1e40af' }}>Market Fees (1%)</td>
+                      <td style={{ border:'1px solid #b8cef0', padding:'6px 9px', fontSize:10, textAlign:'right', fontWeight:700, color:'#b45309' }}>+ ₹ {inr(marketFee)}</td>
                     </tr>
                     <tr style={{ background:'#dbeafe' }}>
                       <td style={{ padding:'9px 10px', fontWeight:900, color:'#1e3a8a', fontSize:13 }}>TOTAL AMOUNT</td>
@@ -710,6 +829,135 @@ const cbStyle = (checked) => ({
   alignItems:'center', justifyContent:'center', flexShrink:0, transition:'all 0.15s',
 });
 
+// ─── Edit Buyer Modal ─────────────────────────────────────────
+function EditBuyerModal({ buyer, onClose, onSave }) {
+  const [name,     setName]     = useState(buyer.name || '');
+  const [shortName,setShortName]= useState(buyer.serial_number || '');
+  const [mobile,   setMobile]   = useState(buyer.mobile && buyer.mobile !== '0000000000' ? buyer.mobile : '');
+  const [advance,  setAdvance]  = useState(String(buyer.advance_amount || ''));
+  const [labour,   setLabour]   = useState(String(buyer.labour_rate ?? 5));
+  const [extraBags,       setExtraBags]       = useState(String(buyer.extra_bags || ''));
+  const [extraBagAmount,  setExtraBagAmount]  = useState(String(buyer.extra_bag_amount || ''));
+  const [saving,   setSaving]   = useState(false);
+
+  const save = async () => {
+    if (!name.trim()) { toast.error('Name is required'); return; }
+    setSaving(true);
+    try {
+      const newShortName = shortName.trim().toUpperCase();
+      await updateBuyer(buyer.id, {
+        name:           name.trim().toUpperCase(),
+        serial_number:  newShortName || buyer.serial_number,
+        // lot_number is the field used elsewhere (bag-buyer matching, ledger grouping) to
+        // identify a buyer by short name — keep it in sync with serial_number so a rename
+        // here actually takes effect everywhere, not just in this table's display column.
+        lot_number:     newShortName || buyer.lot_number,
+        mobile:         mobile.trim() || '0000000000',
+        advance_amount: parseFloat(advance) || 0,
+        labour_rate:    parseFloat(labour) || 0,
+        extra_bags:        parseInt(extraBags) || 0,
+        extra_bag_amount:  parseFloat(extraBagAmount) || 0,
+      });
+      toast.success('Buyer updated!');
+      onSave();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.error || err.message || 'Failed to save');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth:480, width:'95%' }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="modal-title">✏️ Edit Buyer — {buyer.serial_number || buyer.name}</div>
+          <button className="modal-close" onClick={onClose}><X size={20}/></button>
+        </div>
+
+        <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1.5fr 1fr', gap:14 }}>
+            <div className="form-group">
+              <label className="form-label">Full Name *</label>
+              <input className="form-input" type="text" value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="FULL NAME"
+                style={{ textTransform:'uppercase' }}
+                autoFocus
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Short Name</label>
+              <input className="form-input" type="text" value={shortName}
+                onChange={e => setShortName(e.target.value)}
+                placeholder="e.g. AKC"
+                style={{ textTransform:'uppercase' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+            <div className="form-group">
+              <label className="form-label">Mobile</label>
+              <input className="form-input" type="tel" value={mobile}
+                onChange={e => setMobile(e.target.value)}
+                placeholder="Mobile number"
+                style={{ textTransform:'none' }}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Advance Paid (₹)</label>
+              <input className="form-input" type="number" value={advance}
+                onChange={e => setAdvance(e.target.value)}
+                placeholder="0"
+                step="1" min="0"
+                style={{ textTransform:'none' }}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Labour Charges Per Bag (₹)</label>
+            <input className="form-input" type="number" value={labour}
+              onChange={e => setLabour(e.target.value)}
+              placeholder="5"
+              step="1" min="0"
+              style={{ textTransform:'none' }}
+            />
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+            <div className="form-group">
+              <label className="form-label">Number of Extra Bags</label>
+              <input className="form-input" type="number" value={extraBags}
+                onChange={e => setExtraBags(e.target.value)}
+                placeholder="0"
+                step="1" min="0"
+                style={{ textTransform:'none' }}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Extra Bag Amount (₹ per bag)</label>
+              <input className="form-input" type="number" value={extraBagAmount}
+                onChange={e => setExtraBagAmount(e.target.value)}
+                placeholder="0"
+                step="1" min="0"
+                style={{ textTransform:'none' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display:'flex', gap:10, marginTop:4 }}>
+            <button className="btn btn-primary" onClick={save} disabled={saving} style={{ flex:1 }}>
+              <Check size={15}/> {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+            <button className="btn btn-secondary" onClick={onClose} style={{ flex:1 }}>Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main BuyerList ───────────────────────────────────────────
 export default function BuyerList() {
   const [buyers,         setBuyers]       = useState([]);
@@ -721,6 +969,7 @@ export default function BuyerList() {
   const [filterMaterial, setFilterMaterial] = useState('');
   const [viewPurchases,  setViewPurchases] = useState(null);
   const [editRate,       setEditRate]     = useState(null);
+  const [editBuyer,      setEditBuyer]    = useState(null);
   const [confirm,        setConfirm]      = useState(null);
   const [selected,       setSelected]     = useState(new Set());
 
@@ -755,7 +1004,7 @@ export default function BuyerList() {
     const key = (b.lot_number && b.lot_number !== '—')
       ? b.lot_number.toUpperCase()
       : (b.name || '').toUpperCase();
-    return buyerStats[key] || { bags: 0, weight: 0, amount: 0 };
+    return buyerStats[key] || { bags: 0, weight: 0, amount: 0, materials: [], byMaterial: {} };
   };
 
   const handleDelete = (id, name) => {
@@ -769,13 +1018,17 @@ export default function BuyerList() {
     });
   };
 
-  const handleDirectPrint = async (buyer) => {
+  // `material` + `includeExtraCharge`: when a buyer purchased more than one material,
+  // each material gets its own separate bill (never merged); the flat Extra Bag Charge
+  // is only shown on the first material's bill so it isn't double-counted across bills.
+  const handleDirectPrint = async (buyer, material, includeExtraCharge = true) => {
     const buyerKey = (buyer.lot_number && buyer.lot_number !== '—') ? buyer.lot_number : buyer.name;
     const tid = toast.loading('Preparing bill...');
     try {
-      const rows = await fetchBuyerPurchases(buyerKey, filterDate);
+      const rows = await fetchBuyerPurchases(buyerKey, filterDate, material);
       toast.dismiss(tid);
-      const html = buildBuyerBillHtml({ buyer, sellerRows: rows, advance: buyer.advance_amount || 0 });
+      const billBuyer = includeExtraCharge ? buyer : { ...buyer, extra_bags: 0 };
+      const html = buildBuyerBillHtml({ buyer: billBuyer, sellerRows: rows, advance: buyer.advance_amount || 0 });
       const w = window.open('', '_blank', 'width=700,height=900');
       w.document.write(html); w.document.close();
     } catch (err) { toast.dismiss(tid); toast.error('Failed to prepare bill'); }
@@ -817,13 +1070,20 @@ export default function BuyerList() {
     if (toPrint.length === 0) return;
     const tid = toast.loading(`Preparing ${toPrint.length} bill(s)...`);
     try {
-      const buyersData = await Promise.all(
+      // Same rule as the single View/Print bill: a buyer who purchased more than one
+      // material gets one separate bill page per material here too, never merged.
+      const buyersData = (await Promise.all(
         toPrint.map(async (buyer) => {
           const buyerKey = (buyer.lot_number && buyer.lot_number !== '—') ? buyer.lot_number : buyer.name;
-          const rows = await fetchBuyerPurchases(buyerKey, filterDate);
-          return { buyer, rows };
+          const live = getLiveStats(buyer);
+          const mats = live.materials.length > 0 ? live.materials : [null];
+          return Promise.all(mats.map(async (material, i) => {
+            const rows = await fetchBuyerPurchases(buyerKey, filterDate, material);
+            const billBuyer = i === 0 ? buyer : { ...buyer, extra_bags: 0 };
+            return { buyer: billBuyer, rows };
+          }));
         })
-      );
+      )).flat();
       toast.dismiss(tid);
       const html = buildMultipleBuyerBillsHtml({ buyersData });
       const w = window.open('', '_blank', 'width=700,height=900');
@@ -835,11 +1095,27 @@ export default function BuyerList() {
     const q = search.toLowerCase();
     const matchesSearch = (!q || [b.name, b.mobile, b.lot_number, b.serial_number, b.material]
       .some(v => v?.toLowerCase().includes(q)));
-    const matchesMaterial = (!filterMaterial || b.material === filterMaterial);
     const live = getLiveStats(b);
+    const matchesMaterial = !filterMaterial
+      || b.material === filterMaterial
+      || live.materials.includes(filterMaterial);
     const matchesDate = !filterDate || statsLoading || live.bags > 0;
     return matchesSearch && matchesMaterial && matchesDate;
   });
+
+  // A buyer who purchased more than one material gets one display row per material —
+  // each with its own bags/weight/amount/bill — instead of one merged row. Short Name
+  // and Name are rendered once (rowSpan) and shared across that buyer's material rows.
+  const displayRows = filtered.flatMap(b => {
+    const live = getLiveStats(b);
+    let mats = live.materials;
+    if (filterMaterial) mats = mats.filter(m => m === filterMaterial);
+    if (mats.length === 0) {
+      return [{ buyer: b, material: null, isFirst: true, rowSpan: 1 }];
+    }
+    return mats.map((m, i) => ({ buyer: b, material: m, isFirst: i === 0, rowSpan: mats.length }));
+  });
+  const buyerIndex = new Map(filtered.map((b, i) => [b.id, i + 1]));
 
   const summaryTotals = filtered.reduce((a, b) => {
     const s   = getLiveStats(b);
@@ -988,57 +1264,76 @@ export default function BuyerList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((b, idx) => {
+              {displayRows.map((row) => {
+                const { buyer: b, material, isFirst, rowSpan } = row;
                 const live    = getLiveStats(b);
+                const matStats = material ? (live.byMaterial[material] || { bags:0, weight:0, amount:0 }) : live;
                 const advance = Number(b.advance_amount || 0);
-                const balance = live.amount - advance;
+                // Advance is a buyer-level payment, not tied to one material — only
+                // deduct it on the first row so a multi-material buyer's balance isn't
+                // reduced by the same advance on every one of their separate rows.
+                const balance = matStats.amount - (isFirst ? advance : 0);
 
                 const isChecked = selected.has(b.id);
                 return (
-                  <tr key={b.id} style={{ background: isChecked ? 'rgba(26,86,219,0.06)' : undefined }}>
-                    <td style={{ textAlign:'center', padding:'10px 8px' }}>
-                      <div onClick={() => toggleOne(b.id)} style={{ ...cbStyle(isChecked), margin:'0 auto' }}>
-                        {isChecked && <Check size={11} color="#fff" strokeWidth={3}/>}
-                      </div>
-                    </td>
-                    <td style={{ fontSize:12, color:'var(--text-muted)' }}>{idx + 1}</td>
-                    <td style={{ fontSize:12, fontFamily:'monospace', fontWeight:800, color:'#4fa3ff', letterSpacing:'0.5px' }}>
-                      {b.serial_number || '—'}
-                    </td>
-                    {/* <td style={{ fontWeight:600, color:'var(--text-primary)' }}>{b.name || '—'}</td> */}
+                  <tr key={`${b.id}-${material || 'all'}`}
+                    style={{ background: isChecked ? 'rgba(26,86,219,0.06)' : undefined, cursor:'pointer' }}
+                    onClick={() => setEditBuyer(b)}
+                  >
+                    {isFirst && (
+                      <td rowSpan={rowSpan} style={{ textAlign:'center', padding:'10px 8px' }} onClick={e => e.stopPropagation()}>
+                        <div onClick={() => toggleOne(b.id)} style={{ ...cbStyle(isChecked), margin:'0 auto' }}>
+                          {isChecked && <Check size={11} color="#fff" strokeWidth={3}/>}
+                        </div>
+                      </td>
+                    )}
+                    {isFirst && (
+                      <td rowSpan={rowSpan} style={{ fontSize:12, color:'var(--text-muted)' }}>{buyerIndex.get(b.id)}</td>
+                    )}
+                    {isFirst && (
+                      <td rowSpan={rowSpan} style={{ fontSize:12, fontFamily:'monospace', fontWeight:800, color:'#4fa3ff', letterSpacing:'0.5px' }}>
+                        {b.serial_number || '—'}
+                      </td>
+                    )}
+                    {isFirst && (
+                      <td rowSpan={rowSpan} style={{ fontWeight:600, color:'var(--text-primary)', borderRight:'1px solid var(--border-light)' }}>{b.name || '—'}</td>
+                    )}
                     <td>
-                      {b.material && b.material !== 'GENERAL'
-                        ? <span className={`badge ${MATERIAL_BADGE[b.material] || 'badge-amber'}`}>{b.material}</span>
-                        : <span style={{ color:'var(--text-muted)', fontSize:12 }}>—</span>
-                      }
+                      {material ? (
+                        <span className={`badge ${MATERIAL_BADGE[material] || 'badge-amber'}`}>{material}</span>
+                      ) : b.material && b.material !== 'GENERAL' ? (
+                        <span className={`badge ${MATERIAL_BADGE[b.material] || 'badge-amber'}`}>{b.material}</span>
+                      ) : (
+                        <span style={{ color:'var(--text-muted)', fontSize:12 }}>—</span>
+                      )}
                     </td>
                     <td style={{ textAlign:'center', fontWeight:700, color:'var(--text-primary)' }}>
-                      {statsLoading ? <Spinner /> : live.bags > 0 ? live.bags : <span style={{ color:'var(--text-muted)' }}>0</span>}
+                      {statsLoading ? <Spinner /> : matStats.bags > 0 ? matStats.bags : <span style={{ color:'var(--text-muted)' }}>0</span>}
                     </td>
                     <td style={{ fontWeight:600, color:'var(--text-primary)' }}>
-                      {statsLoading ? <Spinner /> : live.weight > 0 ? fmtNum(live.weight) : <span style={{ color:'var(--text-muted)' }}>0</span>}
+                      {statsLoading ? <Spinner /> : matStats.weight > 0 ? fmtNum(matStats.weight) : <span style={{ color:'var(--text-muted)' }}>0</span>}
                     </td>
                     <td style={{ fontWeight:700, color:'var(--blue)' }}>
-                      {statsLoading ? <Spinner /> : live.amount > 0 ? `₹${fmtINR(live.amount)}` : <span style={{ color:'var(--text-muted)' }}>—</span>}
+                      {statsLoading ? <Spinner /> : matStats.amount > 0 ? `₹${fmtINR(matStats.amount)}` : <span style={{ color:'var(--text-muted)' }}>—</span>}
                     </td>
                     <td style={{ fontWeight:700, color: balance > 0 ? 'var(--red)' : 'var(--green)' }}>
-                      {statsLoading ? <Spinner /> : live.amount > 0 ? `₹${fmtINR(Math.max(0, balance))}` : <span style={{ color:'var(--text-muted)' }}>—</span>}
+                      {statsLoading ? <Spinner /> : matStats.amount > 0 ? `₹${fmtINR(Math.max(0, balance))}` : <span style={{ color:'var(--text-muted)' }}>—</span>}
                     </td>
                     <td style={{ color:'var(--text-muted)', fontSize:12 }}>{fmtDate(b.entry_date)}</td>
-                    <td>
+                    <td onClick={e => e.stopPropagation()}>
                       <div style={{ display:'flex', gap:5, justifyContent:'center' }}>
-                        <button className="btn btn-green btn-sm" onClick={() => setViewPurchases(b)} title="View Bill">
+                        <button className="btn btn-green btn-sm" onClick={() => setViewPurchases({ buyer: b, material, includeExtraCharge: isFirst })} title="View Bill">
                           <Eye size={13} /> View
                         </button>
                         <button
                           className="btn btn-sm"
                           style={{ background:'var(--accent-dim)', color:'var(--accent)', border:'1px solid rgba(245,158,11,0.3)' }}
-                          onClick={() => handleDirectPrint(b)}
+                          onClick={() => handleDirectPrint(b, material, isFirst)}
                           title="Print Bill"
                         >
                           <Printer size={13} />
                         </button>
-                        <button className="btn btn-blue btn-sm" onClick={() => setEditRate(b)} title="Set Rate">
+                        <button className="btn btn-blue btn-sm" onClick={() => setEditBuyer(b)} title="Edit Buyer">
                           <Edit2 size={13} />
                         </button>
                         <button className="btn btn-red btn-sm" onClick={() => handleDelete(b.id, b.name)} title="Delete">
@@ -1079,7 +1374,9 @@ export default function BuyerList() {
 
       {viewPurchases && (
         <PurchasesModal
-          buyer={viewPurchases}
+          buyer={viewPurchases.buyer}
+          material={viewPurchases.material}
+          includeExtraCharge={viewPurchases.includeExtraCharge}
           filterDate={filterDate}
           onClose={() => setViewPurchases(null)}
           onUpdate={() => { setViewPurchases(null); load(); loadStats(); }}
@@ -1090,6 +1387,13 @@ export default function BuyerList() {
           buyer={editRate}
           onClose={() => setEditRate(null)}
           onSave={() => { load(); loadStats(); }}
+        />
+      )}
+      {editBuyer && (
+        <EditBuyerModal
+          buyer={editBuyer}
+          onClose={() => setEditBuyer(null)}
+          onSave={() => { setEditBuyer(null); load(); loadStats(); }}
         />
       )}
       {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}

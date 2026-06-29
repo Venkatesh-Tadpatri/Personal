@@ -8839,20 +8839,32 @@ function getBags(seller) {
   });
 }
 
+const isGroupedSellerMaterial = (material) => ['GINGER', 'ONION'].includes(material);
+const usesGroupLabour = () => false;
+const materialTitle = (material) =>
+  material ? material.charAt(0) + material.slice(1).toLowerCase() : 'Grouped';
+
 // ─── Reconstruct ginger groups from bag_data ──────────────────
 // Consecutive entries with the same per-bag weight → same group
 function getGingerGroups(seller) {
   const lot = seller.lot_number || `${seller.serial_number}/${parseInt(seller.num_bags)||0}`;
   let raw = [];
   try { raw = JSON.parse(seller.bag_data || '[]'); } catch {}
-  if (raw.length === 0) return [{ lot, bags: parseInt(seller.num_bags)||0, weight: '', rate: '', amount: '', buyer: '' }];
+  if (raw.length === 0) return [{ lot, bags: parseInt(seller.num_bags)||0, weight: '', rate: '', amount: '', buyer: '', rateMode: 'PER_100KG' }];
 
   const groups = [];
   let cur = null;
   raw.forEach(bag => {
     const w = Number(bag.weight);
-    if (!cur || Math.abs(w - cur._perBag) > 0.00001) {
-      cur = { _perBag: w, _sumW: w, bags: 1, rate: bag.rate, buyer: bag.buyer || '', lot };
+    const rateMode = bag.rate_mode || bag.rateMode || 'PER_100KG';
+    if (
+      !cur ||
+      Math.abs(w - cur._perBag) > 0.00001 ||
+      cur.rateMode !== rateMode ||
+      Number(cur.rate) !== Number(bag.rate) ||
+      (cur.buyer || '') !== (bag.buyer || '')
+    ) {
+      cur = { _perBag: w, _sumW: w, bags: 1, rate: bag.rate, buyer: bag.buyer || '', lot, rateMode };
       groups.push(cur);
     } else {
       cur.bags++;
@@ -8863,12 +8875,47 @@ function getGingerGroups(seller) {
   return groups.map(g => {
     const totalW = parseFloat(g._sumW.toFixed(4));
     const rt     = Number(g.rate) > 0 ? String(g.rate) : '';
-    const amt    = totalW && rt ? String(Math.round(totalW * parseFloat(rt) / 100)) : '';
-    return { lot: g.lot, bags: g.bags, weight: totalW > 0 ? String(totalW) : '', rate: rt, amount: amt, buyer: g.buyer };
+    const amt    = rt
+      ? String(Math.round(g.rateMode === 'PER_BAG' ? g.bags * parseFloat(rt) : totalW * parseFloat(rt) / 100))
+      : '';
+    return { lot: g.lot, bags: g.bags, weight: totalW > 0 ? String(totalW) : '', rate: rt, amount: amt, buyer: g.buyer, rateMode: g.rateMode };
   });
 }
 
 // ─── Number to Indian Words ───────────────────────────────────
+function getSellerBillRows(seller) {
+  const totalBags = parseInt(seller.num_bags) || 0;
+  const material = seller.material && seller.material !== 'GENERAL' ? seller.material : 'TAMARIND';
+
+  if (isGroupedSellerMaterial(seller.material)) {
+    return getGingerGroups(seller).map((g, i) => ({
+      srno: String(i + 1),
+      material,
+      lot: g.lot || seller.lot_number || `${seller.serial_number}/${totalBags}`,
+      bags: parseInt(g.bags) || 0,
+      weight: Number(g.weight) > 0 ? Number(g.weight) : null,
+      rate: Number(g.rate) > 0 ? Number(g.rate) : null,
+      amount: Number(g.amount) > 0 ? Number(g.amount) : null,
+    }));
+  }
+
+  let rawBags = [];
+  try { rawBags = JSON.parse(seller.bag_data || '[]'); } catch {}
+
+  return Array.from({ length: totalBags }, (_, i) => {
+    const b = rawBags[i] || {};
+    return {
+      srno: String(i + 1),
+      material,
+      lot: b.lot || seller.lot_number || `${seller.serial_number}/${totalBags}`,
+      bags: 1,
+      weight: Number(b.weight) > 0 ? Number(b.weight) : null,
+      rate: Number(b.rate) > 0 ? Number(b.rate) : null,
+      amount: Number(b.amount) > 0 ? Number(b.amount) : null,
+    };
+  });
+}
+
 function toIndianWords(amount) {
   const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine',
     'Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
@@ -9044,21 +9091,9 @@ const inr = (v) => Math.round(Number(v || 0)).toLocaleString('en-IN');
 
 
 function buildBillHTML(seller) {
-  const totalBags = parseInt(seller.num_bags) || 0;
-  let rawBags = [];
-  try { rawBags = JSON.parse(seller.bag_data || '[]'); } catch {}
- 
-  const bagRows = Array.from({ length: totalBags }, (_, i) => {
-    const b = rawBags[i] || {};
-    return {
-      srno:     String(i + 1).padStart(2, '0'),
-      material: seller.material && seller.material !== 'GENERAL' ? seller.material : 'TAMARIND',
-      lot:      b.lot || seller.lot_number || `${seller.serial_number}/${totalBags}`,
-      weight:   Number(b.weight) > 0 ? Number(b.weight) : null,
-      rate:     Number(b.rate)   > 0 ? Number(b.rate)   : null,
-      amount:   Number(b.amount) > 0 ? Number(b.amount) : null,
-    };
-  });
+  const bagRows = getSellerBillRows(seller);
+  const totalBags = bagRows.reduce((s, b) => s + (Number(b.bags) || 0), 0);
+  const labourUnits = totalBags;
  
   const grossAmount = bagRows.reduce((s, b) => s + (b.amount || 0), 0);
   const totalWeight = bagRows.reduce((s, b) => s + (b.weight || 0), 0);
@@ -9068,7 +9103,8 @@ function buildBillHTML(seller) {
   // const advance     = parseFloat(seller.advance_amount) || 0;
   // const finalPay    = parseFloat((netAmount - advance).toFixed(2));
 
-  const labourAmt   = 20 * totalBags;
+  const labourRate  = Number(seller.labour_rate || 20);
+  const labourAmt   = labourRate * labourUnits;
   const commission  = Math.round(grossAmount * 8 / 100);
   const netAmount   = Math.round(grossAmount - labourAmt - commission);
   const advance     = Math.round(parseFloat(seller.advance_amount) || 0);
@@ -9079,7 +9115,7 @@ function buildBillHTML(seller) {
       <td style="border:1px solid #b8cef0;padding:4px 3px;text-align:center;font-size:10px;">${b.srno}</td>
       <td style="border:1px solid #b8cef0;padding:4px 5px;text-align:left;font-size:10px;font-weight:700;">${b.material}</td>
       <td style="border:1px solid #b8cef0;padding:4px 3px;text-align:center;font-size:9.5px;font-family:monospace;">${b.lot}</td>
-      <td style="border:1px solid #b8cef0;padding:4px 3px;text-align:center;font-size:10px;">1</td>
+      <td style="border:1px solid #b8cef0;padding:4px 3px;text-align:center;font-size:10px;">${b.bags || 1}</td>
       <td style="border:1px solid #b8cef0;padding:4px 3px;text-align:center;font-size:10px;font-weight:700;color:#1e40af;">${b.weight != null ? b.weight : '—'}</td>
       <td style="border:1px solid #b8cef0;padding:4px 3px;text-align:center;font-size:10px;font-weight:700;color:#166534;">${b.rate != null ? Number(b.rate).toLocaleString('en-IN') : '—'}</td>
       <td style="border:1px solid #b8cef0;padding:4px 5px;text-align:right;font-size:10px;font-weight:700;color:#1e40af;">${b.amount != null ? inr(b.amount) : '—'}</td>
@@ -9160,7 +9196,7 @@ function buildBillHTML(seller) {
         <td style="border:1px solid #b8cef0;padding:4px 8px;text-align:right;font-weight:700;color:#dc2626;font-size:10.5px;">− &#8377; ${inr(commission)}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #b8cef0;padding:4px 8px;background:#eff6ff;font-weight:700;color:#1e40af;font-size:10px;">Hamali / Labour Charges</td>
+        <td style="border:1px solid #b8cef0;padding:4px 8px;background:#eff6ff;font-weight:700;color:#1e40af;font-size:10px;">Hamali / Labour Charges${usesGroupLabour(seller.material) ? '' : ` (₹ ${inr(labourRate)} × ${totalBags})`}</td>
         <td style="border:1px solid #b8cef0;padding:4px 8px;text-align:right;font-weight:700;color:#dc2626;font-size:10.5px;">− &#8377; ${inr(labourAmt)}</td>
       </tr>
       <tr>
@@ -9308,23 +9344,11 @@ function printMultipleBills(sellers) {
 }
 
 // ─── Bill Modal ───────────────────────────────────────────────
-function BillModal({ seller, onClose }) {
+export function BillModal({ seller, onClose }) {
 
-  const totalBags = parseInt(seller.num_bags) || 0;
-  let rawBags = [];
-  try { rawBags = JSON.parse(seller.bag_data || '[]'); } catch {}
-
-  const bagRows = Array.from({ length: totalBags }, (_, i) => {
-    const b = rawBags[i] || {};
-    return {
-      srno:     String(i + 1).padStart(2, '0'),
-      material: seller.material && seller.material !== 'GENERAL' ? seller.material : 'GENERAL',
-      lot:      b.lot || seller.lot_number || `${seller.serial_number}/${totalBags}`,
-      weight:   Number(b.weight) > 0 ? Number(b.weight) : null,
-      rate:     Number(b.rate)   > 0 ? Number(b.rate)   : null,
-      amount:   Number(b.amount) > 0 ? Number(b.amount) : null,
-    };
-  });
+  const bagRows = getSellerBillRows(seller);
+  const totalBags = bagRows.reduce((s, b) => s + (Number(b.bags) || 0), 0);
+  const labourUnits = totalBags;
 
   const grossAmount = bagRows.reduce((s, b) => s + (b.amount || 0), 0);
   const totalWeight = bagRows.reduce((s, b) => s + (b.weight || 0), 0);
@@ -9334,7 +9358,8 @@ function BillModal({ seller, onClose }) {
   // const advance     = parseFloat(seller.advance_amount) || 0;
   // const finalPay    = parseFloat((netAmount - advance).toFixed(2));
 
-  const labourAmt   = 20 * totalBags;
+  const labourRate  = Number(seller.labour_rate || 20);
+  const labourAmt   = labourRate * labourUnits;
   const commission  = Math.round(grossAmount * 8 / 100);
   const netAmount   = Math.round(grossAmount - labourAmt - commission);
   const advance     = Math.round(parseFloat(seller.advance_amount) || 0);
@@ -9397,7 +9422,7 @@ function BillModal({ seller, onClose }) {
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, color:'#111' }}>{b.srno}</td>
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 5px', textAlign:'left', fontSize:10, fontWeight:700, color:'#111' }}>{b.material}</td>
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'monospace', color:'#333' }}>{b.lot}</td>
-                      <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:600, color:'#111' }}>1</td>
+                      <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:600, color:'#111' }}>{b.bags || 1}</td>
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#1e40af' }}>{b.weight!=null?b.weight:'—'}</td>
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#166534' }}>{b.rate!=null?Number(b.rate).toLocaleString('en-IN'):'—'}</td>
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 5px', textAlign:'right', fontSize:10, fontWeight:800, color:'#1e40af' }}>{b.amount!=null?inr(b.amount):'—'}</td>
@@ -9417,7 +9442,7 @@ function BillModal({ seller, onClose }) {
               <table style={{ width:'100%', borderCollapse:'collapse', marginTop:2, position:'relative', zIndex:1 }}>
                 <tbody>
                   <tr><td style={{ border:'1px solid #b8cef0', padding:'6px 8px', background:'#eff6ff', fontWeight:700, color:'#1e40af', fontSize:10, width:'58%' }}>Other Charges </td><td style={{ border:'1px solid #b8cef0', padding:'6px 8px', textAlign:'right', fontWeight:700, color:'#dc2626', fontSize:11 }}>− ₹ {inr(commission)}</td></tr>
-                  <tr><td style={{ border:'1px solid #b8cef0', padding:'6px 8px', background:'#eff6ff', fontWeight:700, color:'#1e40af', fontSize:10 }}>Hamali / Labour Charges</td><td style={{ border:'1px solid #b8cef0', padding:'6px 8px', textAlign:'right', fontWeight:700, color:'#dc2626', fontSize:11 }}>− ₹ {inr(labourAmt)}</td></tr>
+                  <tr><td style={{ border:'1px solid #b8cef0', padding:'6px 8px', background:'#eff6ff', fontWeight:700, color:'#1e40af', fontSize:10 }}>Hamali / Labour Charges{usesGroupLabour(seller.material) ? '' : ` (₹ ${inr(labourRate)} × ${totalBags})`}</td><td style={{ border:'1px solid #b8cef0', padding:'6px 8px', textAlign:'right', fontWeight:700, color:'#dc2626', fontSize:11 }}>− ₹ {inr(labourAmt)}</td></tr>
                   <tr><td style={{ border:'1px solid #b8cef0', padding:'6px 8px', background:'#eff6ff', fontWeight:700, color:'#1e40af', fontSize:10 }}>Advance Paid</td><td style={{ border:'1px solid #b8cef0', padding:'6px 8px', textAlign:'right', fontWeight:700, color:'#dc2626', fontSize:11 }}>− ₹ {inr(advance)}</td></tr>
                   <tr style={{ background:'#dbeafe' }}>
                     <td style={{ padding:'9px 10px', color:'#1e3a8a', fontWeight:800, fontSize:13 }}>NET AMOUNT</td>
@@ -9445,13 +9470,15 @@ function BillModal({ seller, onClose }) {
 function EditModal({ seller, onClose, onSave }) {
   const num      = parseInt(seller.num_bags) || 0;
   const lot      = seller.lot_number || (seller.serial_number + '/' + num);
-  const isGinger = seller.material === 'GINGER';
+  const isGroupedMaterial = isGroupedSellerMaterial(seller.material);
+  const groupedMaterialLabel = materialTitle(seller.material);
 
-  const [rows,       setRows]       = useState(() => isGinger ? [] : getBags(seller));
-  const [gingerRows, setGingerRows] = useState(() => isGinger ? getGingerGroups(seller) : []);
+  const [rows,       setRows]       = useState(() => isGroupedMaterial ? [] : getBags(seller));
+  const [gingerRows, setGingerRows] = useState(() => isGroupedMaterial ? getGingerGroups(seller) : []);
+  const [sellerName, setSellerName] = useState(seller.name || '');
   const [nBags,      setNBags]      = useState(String(num));
   const [advance,    setAdvance]    = useState(String(seller.advance_amount || ''));
-  const [labour,     setLabour]     = useState('20');
+  const [labour,     setLabour]     = useState(String(seller.labour_rate || 20));
   const [saving,     setSaving]     = useState(false);
   const [buyers,     setBuyers]     = useState([]);
 
@@ -9461,20 +9488,30 @@ function EditModal({ seller, onClose, onSave }) {
     }).catch(() => {});
   }, []);
 
+  const calcGingerAmount = (row) => {
+    const bagCount = parseInt(row.bags) || 0;
+    const weight = parseFloat(row.weight) || 0;
+    const rate = parseFloat(row.rate) || 0;
+    if (!rate) return '';
+    if (row.rateMode === 'PER_BAG') return bagCount ? String(Math.round(bagCount * rate)) : '';
+    return weight ? String(Math.round((weight * rate) / 100)) : '';
+  };
+
   // Redistribute bags across ginger groups given total n
   const redistributeGinger = (groups, n) => {
     const g = groups.length;
-    return groups.map((r, i) => ({
-      ...r,
-      bags: Math.floor(n / g) + (i < (n % g) ? 1 : 0),
-    }));
+    return groups.map((r, i) => {
+      const bagCount = Math.floor(n / g) + (i < (n % g) ? 1 : 0);
+      const next = { ...r, bags: bagCount };
+      return { ...next, amount: calcGingerAmount(next) };
+    });
   };
 
   const changeNBags = (v) => {
     setNBags(v);
     const n = parseInt(v) || 0;
     if (n > 0) {
-      if (isGinger) {
+      if (isGroupedMaterial) {
         setGingerRows(prev => redistributeGinger(prev, n));
       } else {
         setRows(prev => Array.from({ length: n }, (_, i) =>
@@ -9503,10 +9540,8 @@ function EditModal({ seller, onClose, onSave }) {
     setGingerRows(prev => prev.map((r, j) => {
       if (j !== i) return r;
       const next = { ...r, [field]: val };
-      if (field === 'weight' || field === 'rate') {
-        const w  = parseFloat(field === 'weight' ? val : r.weight) || 0;
-        const rt = parseFloat(field === 'rate'   ? val : r.rate)   || 0;
-        next.amount = w && rt ? String(Math.round((w * rt) / 100)) : '';
+      if (['bags', 'weight', 'rate', 'rateMode'].includes(field)) {
+        next.amount = calcGingerAmount(next);
       }
       return next;
     }));
@@ -9516,7 +9551,17 @@ function EditModal({ seller, onClose, onSave }) {
     const n = parseInt(nBags) || 0;
     if (gingerRows.length < n) {
       setGingerRows(prev => {
-        const newRows = [...prev, { lot, bags: 0, weight: '', rate: '', amount: '', buyer: '' }];
+        const newRows = [...prev, { lot, bags: 0, weight: '', rate: '', amount: '', buyer: '', rateMode: 'PER_100KG' }];
+        return redistributeGinger(newRows, n);
+      });
+    }
+  };
+
+  const addGingerPerBagRow = () => {
+    const n = parseInt(nBags) || 0;
+    if (gingerRows.length < n) {
+      setGingerRows(prev => {
+        const newRows = [...prev, { lot, bags: 0, weight: '', rate: '', amount: '', buyer: '', rateMode: 'PER_BAG' }];
         return redistributeGinger(newRows, n);
       });
     }
@@ -9531,19 +9576,20 @@ function EditModal({ seller, onClose, onSave }) {
   };
 
   const bags        = parseInt(nBags) || 0;
-  const totalW      = isGinger
+  const totalW      = isGroupedMaterial
     ? gingerRows.reduce((s, r) => s + (parseFloat(r.weight) || 0), 0)
     : rows.reduce((s, r) => s + (parseFloat(r.weight) || 0), 0);
-  const grossAmount = isGinger
+  const grossAmount = isGroupedMaterial
     ? gingerRows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0)
     : rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
-  const labourAmt   = (parseFloat(labour) || 0) * bags;
+  const labourUnits = bags;
+  const labourAmt   = (parseFloat(labour) || 0) * labourUnits;
   const commission  = Math.round(grossAmount * 8 / 100);
   const totalDeduct = labourAmt + commission;
   const netPayable  = Math.round(grossAmount - totalDeduct);
   const finalPay    = Math.round(netPayable - (parseFloat(advance) || 0));
 
-  const displayRows = isGinger ? gingerRows : rows;
+  const displayRows = isGroupedMaterial ? gingerRows : rows;
   const ratesDone   = displayRows.filter(r => parseFloat(r.rate)   > 0).length;
   const wtsDone     = displayRows.filter(r => parseFloat(r.weight) > 0).length;
 
@@ -9562,7 +9608,7 @@ function EditModal({ seller, onClose, onSave }) {
   });
 
   const save = async () => {
-    if (isGinger) {
+    if (isGroupedMaterial) {
       if (gingerRows.some(r => !(parseFloat(r.weight) > 0))) { toast.error('Enter weight for all groups'); return; }
     } else {
       if (rows.some(r => !(parseFloat(r.weight) > 0))) { toast.error('Enter weight for all bags'); return; }
@@ -9570,17 +9616,20 @@ function EditModal({ seller, onClose, onSave }) {
     setSaving(true);
     try {
       let bag_data;
-      if (isGinger) {
+      if (isGroupedMaterial) {
         // Expand each group to individual bag entries
         bag_data = [];
         gingerRows.forEach(r => {
           const bagsInGroup  = r.bags || 0;
           const groupW       = parseFloat(r.weight) || 0;
           const rate         = parseFloat(r.rate)   || 0;
+          const rateMode     = r.rateMode || 'PER_100KG';
           const weightPerBag = bagsInGroup > 0 ? groupW / bagsInGroup : 0;
-          const amtPerBag    = weightPerBag && rate ? Math.round(weightPerBag * rate / 100) : 0;
+          const amtPerBag    = rate > 0
+            ? Math.round(rateMode === 'PER_BAG' ? rate : weightPerBag * rate / 100)
+            : 0;
           for (let j = 0; j < bagsInGroup; j++) {
-            bag_data.push({ lot, weight: weightPerBag, rate, amount: amtPerBag, buyer: r.buyer || '' });
+            bag_data.push({ lot, weight: weightPerBag, rate, amount: amtPerBag, buyer: r.buyer || '', rate_mode: rateMode });
           }
         });
       } else {
@@ -9594,10 +9643,12 @@ function EditModal({ seller, onClose, onSave }) {
       }
 
       await API.put('/api/sellers/' + seller.id, {
+        name:           sellerName.trim() || seller.name,
         num_bags:       bags,
         weight:         Math.round(totalW * 100) / 100,
         amount:         netPayable,
         advance_amount: parseFloat(advance) || 0,
+        labour_rate:    parseFloat(labour) || 0,
         rate_fixed:     totalW > 0 && grossAmount > 0 ? Math.round(grossAmount / totalW * 100) : 0,
         bag_data:       JSON.stringify(bag_data),
       });
@@ -9613,7 +9664,7 @@ function EditModal({ seller, onClose, onSave }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth:960, width:'95%' }} onClick={e=>e.stopPropagation()}>
         <div className="modal-header">
-          <div className="modal-title">✏️ Edit Seller — {seller.name}</div>
+          <div className="modal-title">✏️ Edit Seller — {sellerName || seller.name}</div>
           <button className="modal-close" onClick={onClose}><X size={20}/></button>
         </div>
 
@@ -9629,7 +9680,11 @@ function EditModal({ seller, onClose, onSave }) {
           ))}
         </div>
 
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:14, marginBottom:18 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1.5fr 1fr 1fr 1fr', gap:14, marginBottom:18 }}>
+          <div className="form-group">
+            <label className="form-label">Seller Name</label>
+            <input className="form-input" type="text" value={sellerName} onChange={e=>setSellerName(e.target.value)} placeholder="Seller name" style={{ textTransform:'uppercase' }}/>
+          </div>
           <div className="form-group">
             <label className="form-label">Number of Bags</label>
             <input className="form-input" type="number" value={nBags} onChange={e=>changeNBags(e.target.value)} min="1" max="100" style={{ textTransform:'none' }}/>
@@ -9644,14 +9699,14 @@ function EditModal({ seller, onClose, onSave }) {
           </div>
         </div>
 
-        {isGinger ? (
+        {isGroupedMaterial ? (
           /* ── GINGER: group rows ── */
           gingerRows.length > 0 && (
             <>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <Package size={15} style={{ color:'var(--accent)' }}/>
-                  <span style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:14 }}>Ginger Group Details</span>
+                  <span style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:14 }}>{groupedMaterialLabel} Group Details</span>
                   <span style={{ fontSize:11, color:'var(--accent)', background:'var(--accent-dim)', borderRadius:20, padding:'2px 10px', fontWeight:700, border:'1px solid rgba(245,158,11,0.3)' }}>
                     Lot: {lot}
                   </span>
@@ -9659,12 +9714,12 @@ function EditModal({ seller, onClose, onSave }) {
                     {wtsDone}/{gingerRows.length} groups filled
                   </span>
                 </div>
-                <span style={{ fontSize:11, color:'var(--text-muted)' }}>Rate per <strong style={{ color:'var(--text-primary)' }}>100 kg</strong></span>
+                <span style={{ fontSize:11, color:'var(--text-muted)' }}>Default rate per <strong style={{ color:'var(--text-primary)' }}>100 kg</strong></span>
               </div>
 
               {/* Ginger header */}
               <div style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 150px 110px 30px', gap:8, padding:'7px 13px', background:'var(--bg-panel)', borderRadius:'8px 8px 0 0', border:'1px solid var(--border)', borderBottom:'none' }}>
-                {['#','Bags','Weight (kg)','Rate (₹/100kg)','Buyer','Amount (₹)',''].map(h=>(
+                {['#','Bags','Weight (kg)','Rate (₹)','Buyer','Amount (₹)',''].map(h=>(
                   <div key={h} style={{ fontSize:10, fontWeight:700, letterSpacing:1.1, textTransform:'uppercase', color:'var(--text-muted)' }}>{h}</div>
                 ))}
               </div>
@@ -9676,11 +9731,15 @@ function EditModal({ seller, onClose, onSave }) {
                     <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
                     {/* Bags — editable */}
                     <input
-                      type="number"
-                      value={r.bags ?? ''}
-                      onChange={e => updateGinger(i, 'bags', parseInt(e.target.value) || 0)}
+                      type="text"
+                      inputMode="numeric"
+                      value={r.bags ? String(parseInt(r.bags, 10)) : ''}
+                      onChange={e => {
+                        const digits = e.target.value.replace(/\D/g, '').slice(0, 2);
+                        updateGinger(i, 'bags', digits ? Math.min(parseInt(digits, 10), 99) : '');
+                      }}
                       placeholder="bags"
-                      min="1"
+                      maxLength={2}
                       onWheel={e => e.target.blur()}
                       style={{ background:'var(--bg-panel)', border:'1px solid var(--border-light)', borderRadius:6, padding:'6px 8px', color:'var(--text-secondary)', fontFamily:'var(--font-body)', fontSize:12, fontWeight:700, outline:'none', width:'100%', textAlign:'center' }}
                       onFocus={e=>{e.target.style.borderColor='var(--accent)'}}
@@ -9695,7 +9754,7 @@ function EditModal({ seller, onClose, onSave }) {
                     />
                     {/* Rate */}
                     <input type="number" value={r.rate} onChange={e=>updateGinger(i,'rate',e.target.value)}
-                      placeholder="e.g. 3200" step="0.01" min="0" onWheel={e=>e.target.blur()}
+                      placeholder={r.rateMode === 'PER_BAG' ? 'fixed / bag' : 'e.g. 3200 /100kg'} step="0.01" min="0" onWheel={e=>e.target.blur()}
                       style={iStyle(r.rate,'#10b981')}
                       onFocus={e=>{e.target.style.borderColor='#10b981';e.target.style.boxShadow='0 0 0 2px rgba(16,185,129,0.2)'}}
                       onBlur={e=>{e.target.style.borderColor=r.rate?'#10b98166':'var(--border-light)';e.target.style.boxShadow='none'}}
@@ -9724,10 +9783,16 @@ function EditModal({ seller, onClose, onSave }) {
 
               {/* Add Another Group */}
               {gingerRows.length < bags && (
-                <button type="button" onClick={addGingerRow}
-                  style={{ marginTop:8, padding:'7px 16px', background:'var(--accent-dim)', border:'1px solid rgba(245,158,11,0.4)', borderRadius:8, color:'var(--accent)', fontWeight:700, fontSize:12, cursor:'pointer' }}>
-                  + Add Another Group
-                </button>
+                <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:8 }}>
+                  <button type="button" onClick={addGingerRow}
+                    style={{ padding:'7px 16px', background:'var(--accent-dim)', border:'1px solid rgba(245,158,11,0.4)', borderRadius:8, color:'var(--accent)', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+                    + Add Another Group
+                  </button>
+                  <button type="button" onClick={addGingerPerBagRow}
+                    style={{ padding:'7px 16px', background:'var(--blue-dim)', border:'1px solid rgba(59,130,246,0.4)', borderRadius:8, color:'var(--blue)', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+                    + Add Rate / Bag Group
+                  </button>
+                </div>
               )}
 
               {/* Ginger total row */}
@@ -9813,7 +9878,7 @@ function EditModal({ seller, onClose, onSave }) {
             </div>
             <div>
               {[
-                { label:'Gross Amount',           sub: isGinger ? `${gingerRows.length} group${gingerRows.length>1?'s':''} · ${bags} bags` : `${rows.length} bags × Rate`, val:`₹ ${fmtINR(grossAmount)}`,               color:'var(--accent)',         fs:16 },
+                { label:'Gross Amount',           sub: isGroupedMaterial ? `${gingerRows.length} group${gingerRows.length>1?'s':''} · ${bags} bags` : `${rows.length} bags × Rate`, val:`₹ ${fmtINR(grossAmount)}`,               color:'var(--accent)',         fs:16 },
                 { label:'− Labour / Hamali',      sub:`₹${labour||20} × ${bags} bags`,                                                                                    val:`− ₹ ${fmtINR(labourAmt)}`,              color:'var(--red)',            fs:15 },
                 { label:'− Other Charges',        sub:`8% of ₹${fmtINR(grossAmount)}`,                                                                                    val:`− ₹ ${fmtINR(commission)}`,             color:'var(--red)',            fs:15 },
                 { label:'Net Amount',             sub:'Gross − Labour − Commission',                                                                                       val:`₹ ${fmtINR(netPayable)}`,               color:'var(--blue)',           fs:16, highlight:true },
@@ -9822,7 +9887,7 @@ function EditModal({ seller, onClose, onSave }) {
                 <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'13px 18px', borderBottom:'1px solid var(--border)', background:row.highlight?'rgba(59,130,246,0.07)':'transparent' }}>
                   <div>
                     <div style={{ fontSize:13, fontWeight:600, color:row.color }}>{row.label}</div>
-                    {row.sub && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{row.sub}</div>}
+                    {row.sub && !(usesGroupLabour(seller.material) && row.label.includes('Labour')) && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{row.sub}</div>}
                   </div>
                   <div style={{ fontSize:row.fs, fontWeight:800, color:row.color, fontFamily:'var(--font-display)' }}>{row.val}</div>
                 </div>
@@ -10015,7 +10080,7 @@ export default function SellerList() {
                     {(allSelected||someSelected) && <Check size={11} color="#fff" strokeWidth={3}/>}
                   </div>
                 </th>
-                <th>#</th><th>Short Name</th><th>Name</th><th>Material</th>
+                <th>#</th><th>Serial Number</th><th>Name</th><th>Material</th>
                 <th>Bags</th><th>Weight(KG)</th><th>Amount(₹)</th><th>Total(₹)</th><th>Date</th>
                 <th style={{ textAlign:'center' }}>Actions</th>
               </tr>
@@ -10083,12 +10148,6 @@ export default function SellerList() {
       {bill    && <BillModal  seller={bill}    onClose={()=>setBill(null)}/>}
       {editing && <EditModal  seller={editing} onClose={()=>setEditing(null)} onSave={load}/>}
       {confirm && <ConfirmDialog {...confirm}  onClose={()=>setConfirm(null)}/>}
-
-      <style>{`
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; }
-        input[type=number] { -moz-appearance:textfield; }
-      `}</style>
     </div>
   );
 }
