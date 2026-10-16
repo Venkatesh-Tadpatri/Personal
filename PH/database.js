@@ -146,6 +146,31 @@ async function initDb() {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS buyer_dues (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    buyer_name TEXT NOT NULL,
+    amount REAL NOT NULL,
+    due_date TEXT NOT NULL,
+    note TEXT DEFAULT '',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Cash advances given to a seller ahead of any sale — tracked as their own running
+  // ledger (separate from the per-entry `advance_amount` on `sellers`) so an advance can
+  // be recorded before the seller has any sale rows at all, then netted against every
+  // sale they make afterward.
+  db.run(`CREATE TABLE IF NOT EXISTS seller_advances (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seller_name TEXT NOT NULL,
+    village TEXT DEFAULT '',
+    mobile TEXT DEFAULT '',
+    amount REAL NOT NULL,
+    advance_date TEXT NOT NULL,
+    type TEXT DEFAULT 'given',
+    note TEXT DEFAULT '',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   // Auto-migration
   ['sellers', 'buyers'].forEach(table => {
     try { db.run(`ALTER TABLE ${table} ADD COLUMN bag_data TEXT DEFAULT '[]'`); } catch {}
@@ -158,6 +183,10 @@ async function initDb() {
   try { db.run(`ALTER TABLE buyers ADD COLUMN extra_bag_amount REAL DEFAULT 0`); } catch {}
   try { db.run(`ALTER TABLE buyer_payments ADD COLUMN bill_date TEXT DEFAULT NULL`); } catch {}
   try { db.run(`ALTER TABLE buyer_payments ADD COLUMN bill_material TEXT DEFAULT NULL`); } catch {}
+  try { db.run(`ALTER TABLE buyer_payments ADD COLUMN due_id INTEGER DEFAULT NULL`); } catch {}
+  try { db.run(`ALTER TABLE seller_advances ADD COLUMN village TEXT DEFAULT ''`); } catch {}
+  try { db.run(`ALTER TABLE seller_advances ADD COLUMN mobile TEXT DEFAULT ''`); } catch {}
+  try { db.run(`ALTER TABLE seller_advances ADD COLUMN type TEXT DEFAULT 'given'`); } catch {}
 
   saveDb();
   console.log('[DB] Initialized at', dbPath);

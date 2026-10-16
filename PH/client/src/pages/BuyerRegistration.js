@@ -225,6 +225,15 @@ export default function BuyerRegistration() {
       )
     : null;
 
+  // Two different people can share a name (e.g. two "SUDHEER"s) — bills, receipts and
+  // ledger prints show just the name, so an exact duplicate is genuinely ambiguous there.
+  // Block it here and make the shopkeeper add a distinguishing initial up front, rather
+  // than relying on the short name to silently disambiguate everywhere downstream.
+  const nameUpper = form.name.trim().toUpperCase();
+  const nameConflict = nameUpper
+    ? existingBuyers.find(b => (b.name || '').trim().toUpperCase() === nameUpper)
+    : null;
+
   const handle = (e) => {
     const { name, value } = e.target;
     const processed = ['name', 'short_name'].includes(name) ? toUpper(value) : value;
@@ -236,6 +245,9 @@ export default function BuyerRegistration() {
     const errs = {};
     if (shortNameConflict) {
       errs.short_name = `Already used by ${shortNameConflict.name} — pick a different short name`;
+    }
+    if (nameConflict) {
+      errs.name = `A buyer named "${form.name}" already exists — add an initial to tell them apart (e.g. ${form.name} K)`;
     }
     return errs;
   };
@@ -309,14 +321,17 @@ export default function BuyerRegistration() {
         <form onSubmit={submit} noValidate>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:18 }}>
 
-            <Field label="Buyer Name" error={errors.name}>
+            <Field
+              label="Buyer Name"
+              error={errors.name || (nameConflict ? `A buyer named "${form.name}" already exists — add an initial (e.g. ${form.name} K)` : undefined)}
+            >
               <input
                 className="form-input"
                 name="name"
                 value={form.name}
                 onChange={handle}
                 placeholder="FULL NAME"
-                style={eb('name')}
+                style={nameConflict ? { borderColor: 'var(--red)', boxShadow: '0 0 0 3px var(--red-dim)' } : eb('name')}
               />
             </Field>
 
@@ -381,7 +396,7 @@ export default function BuyerRegistration() {
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary btn-lg" disabled={loading || !!shortNameConflict}>
+            <button type="submit" className="btn btn-primary btn-lg" disabled={loading || !!shortNameConflict || !!nameConflict}>
               <Save size={16} /> {loading ? 'Registering...' : 'Register Buyer'}
             </button>
             <button type="button" className="btn btn-secondary btn-lg" onClick={reset}>

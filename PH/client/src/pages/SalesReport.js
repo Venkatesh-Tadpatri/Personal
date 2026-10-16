@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { fmtINR, todayISO } from '../utils';
+import { BILL_CSS, toIndianWords } from './BuyerList';
 
 const API = axios.create({ baseURL: 'http://127.0.0.1:5000' });
 
@@ -330,80 +331,112 @@ export default function SalesReport() {
     toast.success('CSV exported!');
   };
 
-  // Print
+  // Print — same PH letterhead template used across the app's other printed summaries
+  // (see BuyerLedger's "Buyer Ledger Summary — All Buyers" print).
   const handlePrint = () => {
     const { from, to } = getRange();
     const dateLabel = from
       ? `${new Date(from + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} – ${new Date(to + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`
       : 'All Time';
 
-    const tableHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>#</th><th>Date</th><th>Sellers</th><th>Bags</th>
-            <th>Weight (kg)</th><th>Advance (₹)</th><th>Auction Amt (₹)</th>
-            <th>Profit Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${sorted.map((r, i) => `
-            <tr>
-              <td>${i + 1}</td>
-              <td>${new Date(r.date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-              <td style="text-align:center">${r.numSerials}</td>
-              <td style="text-align:center">${r.numBags}</td>
-              <td style="text-align:right">${fmtN(r.totalWeight)}</td>
-              <td style="text-align:right">${fmt2(r.totalAdvance)}</td>
-              <td style="text-align:right; font-weight:700">${r.auctionAmount > 0 ? fmt2(r.auctionAmount) : 'Pending'}</td>
-              <td style="text-align:right; color:#ef4444">${r.auctionAmount > 0 ? fmt2(r.commission) : '—'}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-        <tfoot>
-          <tr style="font-weight:800; background:#f9fafb;">
-            <td colspan="3">TOTALS (${sorted.length} days)</td>
-            <td style="text-align:center">${totals.numBags}</td>
-            <td style="text-align:right">${fmtN(totals.totalWeight)}</td>
-            <td style="text-align:right">${fmt2(totals.totalAdvance)}</td>
-            <td style="text-align:right">${fmt2(totals.auctionAmount)}</td>
-            <td style="text-align:right; color:#ef4444">${fmt2(totals.commission)}</td>
-          </tr>
-        </tfoot>
-      </table>
-    `;
+    const rowsHtml = sorted.map((r, i) => `
+      <tr style="background:${i % 2 === 0 ? '#ffffff' : '#eff6ff'}">
+        <td style="border:1px solid #b8cef0;padding:4px 6px;text-align:center;font-size:8.5px;color:#111;font-weight:600">${String(i + 1).padStart(3, '0')}</td>
+        <td style="border:1px solid #b8cef0;padding:4px 6px;font-size:8.5px;font-weight:700;color:#111">${new Date(r.date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+        <td style="border:1px solid #b8cef0;padding:4px 6px;text-align:center;font-size:8.5px;color:#111">${r.numSerials}</td>
+        <td style="border:1px solid #b8cef0;padding:4px 6px;text-align:center;font-size:8.5px;color:#111">${r.numBags}</td>
+        <td style="border:1px solid #b8cef0;padding:4px 6px;text-align:right;font-size:8.5px;color:#111">${fmtN(r.totalWeight)}</td>
+        <td style="border:1px solid #b8cef0;padding:4px 6px;text-align:right;font-size:8.5px;color:#1e40af">₹${fmt2(r.totalAdvance)}</td>
+        <td style="border:1px solid #b8cef0;padding:4px 6px;text-align:right;font-size:8.5px;font-weight:700;color:${r.auctionAmount > 0 ? '#16a34a' : '#999'}">${r.auctionAmount > 0 ? '₹' + fmt2(r.auctionAmount) : 'Pending'}</td>
+        <td style="border:1px solid #b8cef0;padding:4px 6px;text-align:right;font-size:8.5px;font-weight:700;color:#dc2626">${r.auctionAmount > 0 ? '₹' + fmt2(r.commission) : '—'}</td>
+      </tr>
+    `).join('') || `<tr><td colspan="8" style="text-align:center;color:#999;padding:10px;border:1px solid #b8cef0">No sales data found</td></tr>`;
 
-    const w = window.open('', '_blank', 'width=1100,height=750');
-    w.document.write(`<!DOCTYPE html><html><head><title>Sales Report — ${dateLabel}</title>
-    <style>
-      * { box-sizing:border-box; margin:0; padding:0; }
-      body { font-family:Arial,sans-serif; padding:32px; color:#111; font-size:12px; }
-      .hdr { text-align:center; border-bottom:2px solid #222; padding-bottom:14px; margin-bottom:18px; }
-      .hdr h1 { font-size:20px; margin-bottom:4px; }
-      .hdr p  { font-size:12px; color:#555; }
-      table { width:100%; border-collapse:collapse; margin-bottom:16px; }
-      th,td { border:1px solid #ddd; padding:8px 11px; text-align:left; }
-      th { background:#f5f5f5; font-weight:700; font-size:10px; text-transform:uppercase; letter-spacing:1px; }
-      tr:nth-child(even) td { background:#fafafa; }
-      tfoot tr td { background:#fffbeb; font-weight:800; }
-      .summary { display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
-      .summary-box { border:1px solid #ddd; border-radius:8px; padding:12px 16px; flex:1; min-width:150px; }
-      .summary-box .lbl { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:#888; margin-bottom:4px; }
-      .summary-box .val { font-size:18px; font-weight:800; }
-      @media print { @page { size:A4 landscape; margin:15mm; } }
-    </style></head><body>
-      <div class="hdr"><h1>📊 Sales Report</h1><p>Period: ${dateLabel} | Generated: ${new Date().toLocaleDateString('en-IN')}</p></div>
-      <div class="summary">
-        <div class="summary-box"><div class="lbl">Total Days</div><div class="val">${sorted.length}</div></div>
-        <div class="summary-box"><div class="lbl">Total Sellers</div><div class="val">${totals.numSerials}</div></div>
-        <div class="summary-box"><div class="lbl">Total Bags</div><div class="val">${totals.numBags}</div></div>
-        <div class="summary-box"><div class="lbl">Total Weight</div><div class="val">${fmtN(totals.totalWeight)} kg</div></div>
-        <div class="summary-box"><div class="lbl">Auction Amount</div><div class="val">₹${fmt2(totals.auctionAmount)}</div></div>
-        // <div class="summary-box"><div class="lbl">Total Advance</div><div class="val">₹${fmt2(totals.totalAdvance)}</div></div>
-        // <div class="summary-box"><div class="lbl">Commission (8%)</div><div class="val" style="color:#ef4444">₹${fmt2(totals.commission)}</div></div>
-      </div>
-      ${tableHTML}
-    <script>window.onload=function(){window.print();}<\/script></body></html>`);
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sales Report — ${dateLabel}</title>
+  <style>${BILL_CSS}</style>
+</head>
+<body>
+<div class="page-wrapper" style="max-width:100%">
+  <div class="header-box">
+    <div class="header-props">
+      <span style="text-align:left;line-height:1.4">Prop. Praveen V. Heggani<br>Cell : 9611635183</span>
+      <div class="logo-circle">PH</div>
+      <span style="text-align:right;line-height:1.4">Prop. Pramod V. Heggani<br>Cell : 9448349836</span>
+    </div>
+    <div class="firm-name">Mr. Praveen Heggani</div>
+    <div><span class="firm-badge">TAMARIND, GINGER, GARLIC, ONION &amp; Vegetables</span></div>
+    <div class="firm-type">ORDER SUPPLIER &amp; COMMISSION AGENT</div>
+    <div class="firm-addr">Shop No.4, Rajendra Prasad APMC Market Yard, Humnabad – 585 330 Dist. Bidar (KA)</div>
+    <div><span style="display:inline-block;background:#1e40af;color:#fff;font-size:9px;font-weight:700;padding:3px 14px;border-radius:2px;margin-top:4px">SALES REPORT — ${dateLabel.toUpperCase()}</span></div>
+  </div>
+
+  <div class="meta-table">
+    <div class="meta-row">
+      <span><strong>Total Days :</strong> ${sorted.length}</span>
+      <span><strong>Printed :</strong> ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+    </div>
+    <div class="meta-row">
+      <span><strong>Total Sellers :</strong> ${totals.numSerials}</span>
+      <span><strong>Total Bags :</strong> ${totals.numBags}</span>
+    </div>
+    <div class="meta-row">
+      <span><strong>Total Weight :</strong> ${fmtN(totals.totalWeight)} kg</span>
+      <span><strong>Total Advance :</strong> ₹${fmt2(totals.totalAdvance)}</span>
+    </div>
+  </div>
+
+  <table class="items-table" style="margin-bottom:1px">
+    <thead>
+      <tr>
+        <th style="width:6%">#</th>
+        <th style="width:16%">Date</th>
+        <th style="width:10%">Sellers</th>
+        <th style="width:8%">Bags</th>
+        <th style="width:14%">Weight (kg)</th>
+        <th style="width:14%">Advance (₹)</th>
+        <th style="width:16%">Auction Amt (₹)</th>
+        <th style="width:16%">Profit Amount (₹)</th>
+      </tr>
+    </thead>
+    <tbody>${rowsHtml}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" style="text-align:left;padding-left:7px;font-size:8.5px;font-weight:700">TOTAL (${sorted.length} days)</td>
+        <td style="text-align:center;font-size:8.5px;font-weight:800">${totals.numBags}</td>
+        <td style="text-align:right;font-size:8.5px;font-weight:800">${fmtN(totals.totalWeight)}</td>
+        <td style="text-align:right;font-size:8.5px;font-weight:800;color:#1e40af">₹${fmt2(totals.totalAdvance)}</td>
+        <td style="text-align:right;font-size:8.5px;font-weight:800;color:#16a34a">₹${fmt2(totals.auctionAmount)}</td>
+        <td style="text-align:right;font-size:8.5px;font-weight:800;color:#dc2626">₹${fmt2(totals.commission)}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <table class="deduct-table" style="margin-top:2px">
+    <tbody>
+      <tr class="net-row">
+        <td class="net-label">TOTAL PROFIT / COMMISSION (8%)</td>
+        <td class="net-value">&#8377; ${fmt2(totals.commission)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="in-words"><strong>In Words :</strong> ${toIndianWords(totals.commission)} Only</div>
+  <div class="eoae">(E.&amp;O.E.)</div>
+</div>
+<script>
+  window.onload = function() {
+    setTimeout(function() { window.print(); }, 300);
+  };
+<\/script>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank', 'width=700,height=900');
+    w.document.write(html);
     w.document.close();
   };
 

@@ -8811,6 +8811,7 @@
 
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { Search, Eye, Printer, Trash2, Edit2, X, RefreshCw, Check, Package, CheckSquare } from 'lucide-react';
 import axios from 'axios';
@@ -9466,6 +9467,96 @@ export function BillModal({ seller, onClose }) {
   );
 }
 
+// ─── Searchable buyer dropdown ──────────────────────────────────
+// Swaps the native <select> for a text-filterable list — buyer counts on some lots run
+// long enough that scrolling a plain dropdown to find one is slow. The panel is portaled
+// to document.body and positioned via getBoundingClientRect because the row lists it lives
+// in (Ginger groups / Bag-wise Details) are maxHeight+overflow:auto — an in-flow absolute
+// panel would get clipped by that scroll box instead of floating over it.
+function BuyerSelect({ value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [rect, setRect] = useState(null);
+  const btnRef = useRef(null);
+  const panelRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => {
+      if (btnRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
+    const reposition = () => {
+      if (btnRef.current) setRect(btnRef.current.getBoundingClientRect());
+    };
+    document.addEventListener('mousedown', close);
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('resize', reposition);
+    };
+  }, [open]);
+
+  const openDropdown = () => {
+    setRect(btnRef.current.getBoundingClientRect());
+    setQuery('');
+    setOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const filtered = options.filter(o => o.label.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <div style={{ width: '100%' }}>
+      <button type="button" ref={btnRef} onClick={() => (open ? setOpen(false) : openDropdown())}
+        style={{ background: value ? 'rgba(139,92,246,0.1)' : 'var(--bg-panel)', border: `1px solid ${value ? 'rgba(139,92,246,0.5)' : 'var(--border-light)'}`,
+          borderRadius: 7, padding: '8px 10px', color: value ? '#a78bfa' : 'var(--text-muted)', fontFamily: 'var(--font-body)',
+          fontSize: 12, fontWeight: 700, outline: 'none', width: '100%', cursor: 'pointer', textAlign: 'left',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value || '— Select Buyer —'}</span>
+        <span style={{ fontSize: 9, opacity: 0.7 }}>▾</span>
+      </button>
+
+      {open && rect && createPortal(
+        <div ref={panelRef} style={{ position: 'fixed', top: rect.bottom + 4, left: rect.left, width: rect.width, zIndex: 3000,
+          background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.45)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>
+            <Search size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Search buyer..."
+              style={{ background: 'none', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 12, width: '100%' }} />
+          </div>
+          <div style={{ maxHeight: 180, overflowY: 'auto' }}>
+            <div onClick={() => { onChange(''); setOpen(false); }}
+              style={{ padding: '7px 10px', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', cursor: 'pointer' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              — Select Buyer —
+            </div>
+            {filtered.length === 0 ? (
+              <div style={{ padding: '10px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>No match</div>
+            ) : filtered.map((b, idx) => (
+              <div key={idx} onClick={() => { onChange(b.value); setOpen(false); }}
+                style={{ padding: '7px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  color: b.value === value ? '#a78bfa' : 'var(--text-primary)',
+                  background: b.value === value ? 'rgba(139,92,246,0.1)' : 'transparent' }}
+                onMouseEnter={e => e.currentTarget.style.background = b.value === value ? 'rgba(139,92,246,0.15)' : 'var(--bg-hover)'}
+                onMouseLeave={e => e.currentTarget.style.background = b.value === value ? 'rgba(139,92,246,0.1)' : 'transparent'}>
+                {b.label}
+              </div>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 // ─── Edit Modal ───────────────────────────────────────────────
 function EditModal({ seller, onClose, onSave }) {
   const num      = parseInt(seller.num_bags) || 0;
@@ -9626,7 +9717,7 @@ function EditModal({ seller, onClose, onSave }) {
           const rateMode     = r.rateMode || 'PER_100KG';
           const weightPerBag = bagsInGroup > 0 ? groupW / bagsInGroup : 0;
           const amtPerBag    = rate > 0
-            ? Math.round(rateMode === 'PER_BAG' ? rate : weightPerBag * rate / 100)
+            ? (rateMode === 'PER_BAG' ? rate : weightPerBag * rate / 100)
             : 0;
           for (let j = 0; j < bagsInGroup; j++) {
             bag_data.push({ lot, weight: weightPerBag, rate, amount: amtPerBag, buyer: r.buyer || '', rate_mode: rateMode });
@@ -9760,14 +9851,7 @@ function EditModal({ seller, onClose, onSave }) {
                       onBlur={e=>{e.target.style.borderColor=r.rate?'#10b98166':'var(--border-light)';e.target.style.boxShadow='none'}}
                     />
                     {/* Buyer */}
-                    <select value={r.buyer||''} onChange={e=>updateGinger(i,'buyer',e.target.value)}
-                      style={{ background:r.buyer?'rgba(139,92,246,0.1)':'var(--bg-panel)', border:`1px solid ${r.buyer?'rgba(139,92,246,0.5)':'var(--border-light)'}`, borderRadius:7, padding:'8px 10px', color:r.buyer?'#a78bfa':'var(--text-muted)', fontFamily:'var(--font-body)', fontSize:12, fontWeight:700, outline:'none', width:'100%', cursor:'pointer' }}
-                    >
-                      <option value="">— Select Buyer —</option>
-                      {buyerOptions.map((b,idx)=>(
-                        <option key={idx} value={b.value}>{b.label}</option>
-                      ))}
-                    </select>
+                    <BuyerSelect value={r.buyer||''} onChange={val=>updateGinger(i,'buyer',val)} options={buyerOptions} />
                     {/* Amount */}
                     <div style={{ fontSize:13, fontWeight:800, color:r.amount?'var(--accent)':'var(--text-muted)', textAlign:'right' }}>
                       {r.amount?'₹'+fmtINR(r.amount):'—'}
@@ -9845,14 +9929,7 @@ function EditModal({ seller, onClose, onSave }) {
                       onFocus={e=>{e.target.style.borderColor='#10b981';e.target.style.boxShadow='0 0 0 2px rgba(16,185,129,0.2)'}}
                       onBlur={e=>{e.target.style.borderColor=r.rate?'#10b98166':'var(--border-light)';e.target.style.boxShadow='none'}}
                     />
-                    <select value={r.buyer||''} onChange={e=>update(i,'buyer',e.target.value)}
-                      style={{ background:r.buyer?'rgba(139,92,246,0.1)':'var(--bg-panel)', border:`1px solid ${r.buyer?'rgba(139,92,246,0.5)':'var(--border-light)'}`, borderRadius:7, padding:'8px 10px', color:r.buyer?'#a78bfa':'var(--text-muted)', fontFamily:'var(--font-body)', fontSize:12, fontWeight:700, outline:'none', width:'100%', cursor:'pointer' }}
-                    >
-                      <option value="">— Select Buyer —</option>
-                      {buyerOptions.map((b,idx)=>(
-                        <option key={idx} value={b.value}>{b.label}</option>
-                      ))}
-                    </select>
+                    <BuyerSelect value={r.buyer||''} onChange={val=>update(i,'buyer',val)} options={buyerOptions} />
                     <div style={{ fontSize:13, fontWeight:800, color:r.amount?'var(--accent)':'var(--text-muted)', textAlign:'right' }}>
                       {r.amount?'₹'+fmtINR(r.amount):'—'}
                     </div>

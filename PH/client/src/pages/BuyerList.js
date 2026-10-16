@@ -830,7 +830,7 @@ const cbStyle = (checked) => ({
 });
 
 // ─── Edit Buyer Modal ─────────────────────────────────────────
-function EditBuyerModal({ buyer, onClose, onSave }) {
+function EditBuyerModal({ buyer, existingBuyers = [], onClose, onSave }) {
   const [name,     setName]     = useState(buyer.name || '');
   const [shortName,setShortName]= useState(buyer.serial_number || '');
   const [mobile,   setMobile]   = useState(buyer.mobile && buyer.mobile !== '0000000000' ? buyer.mobile : '');
@@ -840,8 +840,18 @@ function EditBuyerModal({ buyer, onClose, onSave }) {
   const [extraBagAmount,  setExtraBagAmount]  = useState(String(buyer.extra_bag_amount || ''));
   const [saving,   setSaving]   = useState(false);
 
+  // Two different people can share a name (e.g. two "SUDHEER"s) — bills/receipts/prints
+  // show just the name, so a rename that collides with someone else is genuinely ambiguous
+  // there. Block it (excluding this buyer's own existing rows, since renaming across their
+  // own multiple purchase-day records isn't a conflict with themselves).
+  const nameUpper = name.trim().toUpperCase();
+  const nameConflict = nameUpper
+    ? existingBuyers.find(b => b.id !== buyer.id && (b.name || '').trim().toUpperCase() === nameUpper)
+    : null;
+
   const save = async () => {
     if (!name.trim()) { toast.error('Name is required'); return; }
+    if (nameConflict) { toast.error(`A buyer named "${name}" already exists — add an initial to tell them apart`); return; }
     setSaving(true);
     try {
       const newShortName = shortName.trim().toUpperCase();
@@ -881,9 +891,14 @@ function EditBuyerModal({ buyer, onClose, onSave }) {
               <input className="form-input" type="text" value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="FULL NAME"
-                style={{ textTransform:'uppercase' }}
+                style={{ textTransform:'uppercase', ...(nameConflict ? { borderColor:'var(--red)', boxShadow:'0 0 0 3px var(--red-dim)' } : {}) }}
                 autoFocus
               />
+              {nameConflict && (
+                <div style={{ fontSize:11, color:'var(--red)', marginTop:3 }}>
+                  A buyer named "{name}" already exists — add an initial (e.g. {name} K)
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Short Name</label>
@@ -947,7 +962,7 @@ function EditBuyerModal({ buyer, onClose, onSave }) {
           </div>
 
           <div style={{ display:'flex', gap:10, marginTop:4 }}>
-            <button className="btn btn-primary" onClick={save} disabled={saving} style={{ flex:1 }}>
+            <button className="btn btn-primary" onClick={save} disabled={saving || !!nameConflict} style={{ flex:1 }}>
               <Check size={15}/> {saving ? 'Saving…' : 'Save Changes'}
             </button>
             <button className="btn btn-secondary" onClick={onClose} style={{ flex:1 }}>Cancel</button>
@@ -1392,6 +1407,7 @@ export default function BuyerList() {
       {editBuyer && (
         <EditBuyerModal
           buyer={editBuyer}
+          existingBuyers={buyers}
           onClose={() => setEditBuyer(null)}
           onSave={() => { setEditBuyer(null); load(); loadStats(); }}
         />

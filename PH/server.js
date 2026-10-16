@@ -530,6 +530,28 @@ app.delete('/api/buyers/:id', (req, res) => {
   }
 });
 
+// Buyer Ledger groups every `buyers` row (one per registration/visit) under a single
+// display key (short name if set, else full name), so removing "a buyer" from that ledger
+// means clearing every row under that key — plus their payments and old dues, which are
+// tied by the same key — not just one row. Purchase history embedded in sellers' bag_data
+// is left untouched; it's the seller's own sale record, not the buyer's.
+app.delete('/api/buyers/by-key/:key', (req, res) => {
+  try {
+    const key = req.params.key.toUpperCase();
+    // Mirrors the client's key derivation: short name (lot_number) if set and not the
+    // placeholder '—', otherwise the full name.
+    prepare(`DELETE FROM buyers WHERE
+      (lot_number IS NOT NULL AND lot_number != '' AND lot_number != '—' AND UPPER(lot_number) = ?)
+      OR ((lot_number IS NULL OR lot_number = '' OR lot_number = '—') AND UPPER(name) = ?)`)
+      .run(key, key);
+    prepare('DELETE FROM buyer_payments WHERE UPPER(buyer_name) = ?').run(key);
+    prepare('DELETE FROM buyer_dues WHERE UPPER(buyer_name) = ?').run(key);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ══════════════════════════════════════════════════════════════════════════════
 // SUMMARY
 // ══════════════════════════════════════════════════════════════════════════════
@@ -584,13 +606,13 @@ app.get('/api/buyer-payments', (req, res) => {
 
 app.post('/api/buyer-payments', (req, res) => {
   try {
-    const { buyer_name, amount, payment_date, note, bill_date, bill_material } = req.body;
+    const { buyer_name, amount, payment_date, note, bill_date, bill_material, due_id } = req.body;
     if (!buyer_name || !amount || !payment_date) {
       return res.status(400).json({ success: false, error: 'buyer_name, amount, payment_date are required' });
     }
     const result = prepare(
-      'INSERT INTO buyer_payments (buyer_name, amount, payment_date, note, bill_date, bill_material) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(buyer_name.toUpperCase(), Number(amount), payment_date, note || '', bill_date || null, bill_material || null);
+      'INSERT INTO buyer_payments (buyer_name, amount, payment_date, note, bill_date, bill_material, due_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(buyer_name.toUpperCase(), Number(amount), payment_date, note || '', bill_date || null, bill_material || null, due_id || null);
     res.json({ success: true, id: result.lastInsertRowid });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -611,6 +633,108 @@ app.put('/api/buyer-payments/:id', (req, res) => {
 app.delete('/api/buyer-payments/:id', (req, res) => {
   try {
     prepare('DELETE FROM buyer_payments WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BUYER OLD DUES (manual opening-balance entries carried over from before this system)
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.get('/api/buyer-dues', (req, res) => {
+  try {
+    const { buyer_name } = req.query;
+    const dues = buyer_name
+      ? prepare('SELECT * FROM buyer_dues WHERE buyer_name = ? ORDER BY due_date DESC, created_at DESC').all(buyer_name)
+      : prepare('SELECT * FROM buyer_dues ORDER BY due_date DESC, created_at DESC').all();
+    res.json({ success: true, data: dues });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/buyer-dues', (req, res) => {
+  try {
+    const { buyer_name, amount, due_date, note } = req.body;
+    if (!buyer_name || !amount || !due_date) {
+      return res.status(400).json({ success: false, error: 'buyer_name, amount, due_date are required' });
+    }
+    const result = prepare(
+      'INSERT INTO buyer_dues (buyer_name, amount, due_date, note) VALUES (?, ?, ?, ?)'
+    ).run(buyer_name.toUpperCase(), Number(amount), due_date, note || '');
+    res.json({ success: true, id: result.lastInsertRowid });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/buyer-dues/:id', (req, res) => {
+  try {
+    const { amount, due_date, note } = req.body;
+    prepare('UPDATE buyer_dues SET amount = ?, due_date = ?, note = ? WHERE id = ?')
+      .run(Number(amount), due_date, note || '', req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/buyer-dues/:id', (req, res) => {
+  try {
+    prepare('DELETE FROM buyer_dues WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SELLER ADVANCES (cash given to a seller before they sell their produce)
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.get('/api/seller-advances', (req, res) => {
+  try {
+    const { seller_name } = req.query;
+    const advances = seller_name
+      ? prepare('SELECT * FROM seller_advances WHERE seller_name = ? ORDER BY advance_date DESC, created_at DESC').all(seller_name)
+      : prepare('SELECT * FROM seller_advances ORDER BY advance_date DESC, created_at DESC').all();
+    res.json({ success: true, data: advances });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/seller-advances', (req, res) => {
+  try {
+    const { seller_name, village, mobile, amount, advance_date, type, note } = req.body;
+    if (!seller_name || !amount || !advance_date) {
+      return res.status(400).json({ success: false, error: 'seller_name, amount, advance_date are required' });
+    }
+    const result = prepare(
+      'INSERT INTO seller_advances (seller_name, village, mobile, amount, advance_date, type, note) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(seller_name.toUpperCase(), village || '', mobile || '', Number(amount), advance_date, type === 'repaid' ? 'repaid' : 'given', note || '');
+    res.json({ success: true, id: result.lastInsertRowid });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/seller-advances/:id', (req, res) => {
+  try {
+    const { amount, advance_date, type, note, village, mobile } = req.body;
+    prepare('UPDATE seller_advances SET amount = ?, advance_date = ?, type = ?, note = ?, village = ?, mobile = ? WHERE id = ?')
+      .run(Number(amount), advance_date, type === 'repaid' ? 'repaid' : 'given', note || '', village || '', mobile || '', req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/seller-advances/:id', (req, res) => {
+  try {
+    prepare('DELETE FROM seller_advances WHERE id = ?').run(req.params.id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

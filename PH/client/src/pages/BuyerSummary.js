@@ -228,6 +228,10 @@ export default function BuyerSummary() {
 
       // One sub-row per material — each gets its own Gross/Labour/Market Fee/Total/
       // Balance rowspan, never merged with another material's figures.
+      // rowspan must match the actual number of <tr> emitted for this buyer (one per
+      // grouped bag entry), not the raw physical bag count — grouped materials
+      // (Ginger/Onion) collapse many bags into one row.
+      const buyerRowCount = r.subRows.reduce((s, g) => s + g.bags.length, 0);
       r.subRows.forEach((sub, si) => {
         const subRc = sub.bags.length;
         sub.bags.forEach((bag, bi) => {
@@ -235,9 +239,9 @@ export default function BuyerSummary() {
           const isBuyerLast = si === r.subRows.length - 1 && isSubLast;
           const bdr = isBuyerLast ? '2px solid #93c5fd' : isSubLast ? '2px solid #f59e0b' : '1px solid #e2e8f0';
           rowsHtml += `<tr style="background:${rowBg};border-bottom:${bdr}">`;
-          if (si===0 && bi===0) rowsHtml += `<td rowspan="${r.numBags}" style="${P}font-weight:800;color:#d97706;text-align:center;vertical-align:middle">${ri+1}</td>`;
-          if (si===0 && bi===0) rowsHtml += `<td rowspan="${r.numBags}" style="${P}font-weight:800;color:#4fa3ff;font-family:monospace;vertical-align:middle">${sn}</td>`;
-          if (si===0 && bi===0) rowsHtml += `<td rowspan="${r.numBags}" style="${P}font-weight:700;vertical-align:middle">${r.buyer.name}</td>`;
+          if (si===0 && bi===0) rowsHtml += `<td rowspan="${buyerRowCount}" style="${P}font-weight:800;color:#d97706;text-align:center;vertical-align:middle">${ri+1}</td>`;
+          if (si===0 && bi===0) rowsHtml += `<td rowspan="${buyerRowCount}" style="${P}font-weight:800;color:#4fa3ff;font-family:monospace;vertical-align:middle">${sn}</td>`;
+          if (si===0 && bi===0) rowsHtml += `<td rowspan="${buyerRowCount}" style="${P}font-weight:700;vertical-align:middle">${r.buyer.name}</td>`;
           rowsHtml += `<td style="${P}font-family:monospace;font-weight:700;text-align:center;color:#1e3a5f">${bag.material}</td>`;
           rowsHtml += `<td style="${P}font-family:monospace;font-weight:700;text-align:center;color:#1e3a5f">${bag.lot}</td>`;
           rowsHtml += `<td style="${P}text-align:center;font-weight:800;font-size:12px">${bagCount(bag)}</td>`;
@@ -350,7 +354,7 @@ export default function BuyerSummary() {
     if (w && w.document) { w.document.write(html); w.document.close(); }
   };
 
-  const cell = { borderRight:'1px solid var(--border)', borderBottom:'1px solid var(--border)', padding:'9px 8px', verticalAlign:'middle' };
+  const cell = { borderRight:'1px solid var(--border)', borderBottom:'1px solid var(--border)', padding:'9px 8px', verticalAlign:'middle', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' };
 
   return (
     <div>
@@ -438,18 +442,18 @@ export default function BuyerSummary() {
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, tableLayout:'fixed' }}>
                     <colgroup>
                       <col style={{ width:'44px' }}/>
-                      <col style={{ width:'68px' }}/>
+                      <col style={{ width:'86px' }}/>
                       <col style={{ width:'120px' }}/>
                       <col style={{ width:'90px' }}/>
                       <col style={{ width:'70px' }}/>
                       <col style={{ width:'48px' }}/>
-                      <col style={{ width:'88px' }}/>
-                      <col style={{ width:'98px' }}/>
+                      <col style={{ width:'92px' }}/>
+                      <col style={{ width:'104px' }}/>
                       <col style={{ width:'102px' }}/>
                       <col style={{ width:'108px' }}/>
                       <col style={{ width:'88px' }}/>
+                      <col style={{ width:'104px' }}/>
                       <col style={{ width:'92px' }}/>
-                      <col style={{ width:'88px' }}/>
                       <col style={{ width:'108px' }}/>
                       <col style={{ width:'92px' }}/>
                       <col style={{ width:'108px' }}/>
@@ -480,6 +484,7 @@ export default function BuyerSummary() {
                             color:'var(--text-muted)',
                             borderBottom:'2px solid var(--blue)',
                             borderRight:'1px solid var(--border)',
+                            whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                           }}>{h.label}</th>
                         ))}
                       </tr>
@@ -488,6 +493,10 @@ export default function BuyerSummary() {
                       {buyerRows.map((r, ri) => {
                         const rowBg = ri % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-panel)';
                         const sn    = r.buyer.serial_number || '—';
+                        // rowSpan must match the actual number of <tr> rendered for this
+                        // buyer (one per grouped bag entry), not the raw physical bag count —
+                        // grouped materials (Ginger/Onion) collapse many bags into one row.
+                        const buyerRowCount = r.subRows.reduce((s, g) => s + g.bags.length, 0);
                         // One sub-row per material — each gets its own Gross/Labour/Market
                         // Fee/Total/Balance rowSpan, never merged with another material.
                         return r.subRows.flatMap((sub, si) => {
@@ -503,9 +512,9 @@ export default function BuyerSummary() {
                             const buyerMerged  = { ...cell, background:rowBg, borderBottom:'2px solid var(--blue)' };
                             return (
                               <tr key={r.buyer.id+'-'+si+'-'+bi} style={{ background:rowBg }}>
-                                {isBuyerFirst && <td rowSpan={r.numBags} style={{ ...buyerMerged, fontWeight:800, color:'var(--accent)', textAlign:'center', verticalAlign:'middle', fontSize:14 }}>{ri+1}</td>}
-                                {isBuyerFirst && <td rowSpan={r.numBags} style={{ ...buyerMerged, fontWeight:800, color:'#4fa3ff', fontFamily:'monospace', textAlign:'center' }}>{sn}</td>}
-                                {isBuyerFirst && <td rowSpan={r.numBags} style={{ ...buyerMerged, fontWeight:700, color:'var(--text-primary)', borderRight:'1px solid var(--border-light)' }}>{r.buyer.name}</td>}
+                                {isBuyerFirst && <td rowSpan={buyerRowCount} style={{ ...buyerMerged, fontWeight:800, color:'var(--accent)', textAlign:'center', verticalAlign:'middle', fontSize:14 }}>{ri+1}</td>}
+                                {isBuyerFirst && <td rowSpan={buyerRowCount} style={{ ...buyerMerged, fontWeight:800, color:'#4fa3ff', fontFamily:'monospace', textAlign:'center' }}>{sn}</td>}
+                                {isBuyerFirst && <td rowSpan={buyerRowCount} style={{ ...buyerMerged, fontWeight:700, color:'var(--text-primary)', borderRight:'1px solid var(--border-light)' }}>{r.buyer.name}</td>}
                                 <td style={{ ...td, textAlign:'center' }}>
                                   {bag.material && bag.material !== '—'
                                     ? <span className={`badge ${badge}`}>{bag.material}</span>

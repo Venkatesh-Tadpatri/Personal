@@ -246,13 +246,14 @@ import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-route
 import { Toaster } from 'react-hot-toast';
 import {
   LayoutDashboard, UserPlus, Users, ShoppingCart, List, BarChart3,
-  Wheat, ChevronRight, LogOut, TrendingUp, BookOpen, History
+  Wheat, ChevronRight, LogOut, TrendingUp, BookOpen, History, Wallet
 } from 'lucide-react';
 import SalesReport from './pages/SalesReport';
 import Dashboard from './pages/Dashboard';
 import SellerRegistration from './pages/SellerRegistration';
 import SellerList from './pages/SellerList';
 import SellerHistory from './pages/SellerHistory';
+import SellerAdvance from './pages/SellerAdvance';
 import BuyerRegistration from './pages/BuyerRegistration';
 import BuyerList from './pages/BuyerList';
 import Summary from './pages/Summary';
@@ -266,6 +267,7 @@ const NAV_ITEMS = [
   { label: 'Seller Registration', icon: UserPlus,        path: '/seller-registration', section: 'SELLERS'  },
   { label: 'Seller List',         icon: Users,           path: '/seller-list',         section: 'SELLERS'  },
   { label: 'Seller History',      icon: History,         path: '/seller-history',      section: 'SELLERS'  },
+  { label: 'Seller Advance',      icon: Wallet,          path: '/seller-advance',      section: 'SELLERS'  },
   { label: 'Buyer Registration',  icon: ShoppingCart,    path: '/buyer-registration',  section: 'BUYERS'   },
   { label: 'Buyer List',          icon: List,            path: '/buyer-list',          section: 'BUYERS'   },
   { label: 'Seller Summary',       icon: BarChart3,       path: '/summary',              section: 'REPORTS'  },
@@ -401,6 +403,7 @@ const PAGE_TITLES = {
   '/seller-registration': 'Seller Registration',
   '/seller-list':         'Seller List',
   '/seller-history':      'Seller History',
+  '/seller-advance':      'Seller Advance',
   '/buyer-registration':  'Buyer Registration',
   '/buyer-list':          'Buyer List',
   '/summary':             'Seller Summary',
@@ -448,6 +451,7 @@ function AppLayout({ user, onLogout }) {
             <Route path="/seller-registration" element={<SellerRegistration />} />
             <Route path="/seller-list"         element={<SellerList />} />
             <Route path="/seller-history"      element={<SellerHistory />} />
+            <Route path="/seller-advance"      element={<SellerAdvance />} />
             <Route path="/buyer-registration"  element={<BuyerRegistration />} />
             <Route path="/buyer-list"          element={<BuyerList />} />
             <Route path="/summary"             element={<Summary />} />
