@@ -304,8 +304,18 @@ const { prepare, initDb } = require('./database');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE'], allowedHeaders: ['Content-Type'] }));
+app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE'], allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
+
+// ── Auth: accounts, licences, admin API (see auth.js) ─────────────────────────
+const auth = require('./auth')(app, prepare, {
+  // Created on first run only — passwords can then be changed from the app
+  seedUsers: [
+    // Admin signs in with this email; replaces the original "admin" login on existing installs
+    { username: 'venkateshtadpatri26@gmail.com', email: 'venkateshtadpatri26@gmail.com', password: 'Venku@308415', role: 'admin', replaces: 'admin' },
+    { username: 'pramod', password: 'ph@1234',   role: 'user'  },
+  ],
+});
 
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -347,29 +357,33 @@ app.get('/api/sellers/:id', (req, res) => {
 app.post('/api/sellers', (req, res) => {
   try {
     const {
-      serial_number, name, mobile, material,
-      num_bags, lot_number, weight, advance_amount,
+      name, mobile, material,
+      num_bags, weight, advance_amount,
       entry_date, bag_data
     } = req.body;
 
     const materialName = (material || 'GENERAL').toUpperCase();
 
-    console.log('[POST /api/sellers]', name, '| material:', materialName, '| bag_data:', bag_data);
+    // Serial number is auto-assigned: next number for this material on this date
+    const last = prepare('SELECT MAX(CAST(serial_number AS INTEGER)) AS max_serial FROM sellers WHERE material = ? AND entry_date = ?').get(materialName, entry_date);
+    const serial_number = String((Number(last && last.max_serial) || 0) + 1);
+    const lot_number = `${serial_number}/${num_bags}`;
 
-    const exists = prepare('SELECT id FROM sellers WHERE serial_number = ? AND material = ? AND entry_date = ?').get(serial_number, materialName, entry_date);
-    if (exists) {
-      return res.status(400).json({ success: false, error: `Serial number ${serial_number} already used for ${materialName} on ${entry_date}.` });
-    }
+    console.log('[POST /api/sellers]', name, '| material:', materialName, '| serial:', serial_number, '| bag_data:', bag_data);
 
     let bagDataStr = '[]';
     try {
       const parsed = typeof bag_data === 'string' ? JSON.parse(bag_data) : (Array.isArray(bag_data) ? bag_data : []);
-      bagDataStr = JSON.stringify(parsed);
+      bagDataStr = JSON.stringify(parsed.map(b => ({ ...b, lot: lot_number })));
     } catch (e) {}
 
+    // Commission % and labour ₹/bag come from the material's settings, saved on the seller as a snapshot
+    const rates = readMaterials().find(m => m.name === materialName)
+      || { commission: DEFAULT_COMMISSION, labour: DEFAULT_LABOUR };
+
     const result = prepare(`
-      INSERT INTO sellers (serial_number, name, mobile, material, num_bags, lot_number, weight, advance_amount, bag_data, entry_date)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO sellers (serial_number, name, mobile, material, num_bags, lot_number, weight, advance_amount, bag_data, entry_date, labour_rate, commission_rate)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       serial_number,
       name.toUpperCase(),
@@ -380,10 +394,15 @@ app.post('/api/sellers', (req, res) => {
       weight,
       advance_amount || 0,
       bagDataStr,
-      entry_date
+      entry_date,
+      rates.labour,
+      rates.commission
     );
 
-    res.json({ success: true, id: result.lastInsertRowid });
+    // Bill number is issued at registration (format from Settings → Bill Number)
+    const bill_no = assignBillNo(result.lastInsertRowid);
+
+    res.json({ success: true, id: result.lastInsertRowid, serial_number, lot_number, bill_no, labour_rate: rates.labour, commission_rate: rates.commission });
   } catch (err) {
     console.error('[POST /api/sellers] error:', err.message);
     res.status(500).json({ success: false, error: err.message });
@@ -396,7 +415,7 @@ app.put('/api/sellers/:id', (req, res) => {
     const fields = [];
     const values = [];
 
-    const allowed = ['serial_number','name','mobile','material','num_bags','lot_number','weight','advance_amount','labour_rate','rate_fixed','amount','bag_data','entry_date'];
+    const allowed = ['serial_number','name','mobile','material','num_bags','lot_number','weight','advance_amount','labour_rate','commission_rate','rate_fixed','amount','bag_data','entry_date'];
     allowed.forEach(f => {
       if (body[f] !== undefined) {
         fields.push(`${f} = ?`);
@@ -691,6 +710,280 @@ app.delete('/api/buyer-dues/:id', (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// SETTINGS — configurable material list (used by every material picklist)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Each material carries the seller commission (%) and labour charge (₹ per bag) applied at registration
+const DEFAULT_COMMISSION = 8;
+const DEFAULT_LABOUR     = 20;
+const DEFAULT_MATERIALS  = ['TAMARIND', 'GINGER', 'ONION', 'LEMONS', 'OTHERS']
+  .map(name => ({ name, commission: DEFAULT_COMMISSION, labour: DEFAULT_LABOUR }));
+
+// Accepts a plain name (lists saved before rates existed) or { name, commission, labour }
+const toMaterial = (m) => {
+  const obj = typeof m === 'object' && m !== null ? m : { name: m };
+  const num = (v, d) => (v === '' || v === null || v === undefined || isNaN(Number(v)) ? d : Number(v));
+  return {
+    name:       String(obj.name || '').trim().toUpperCase(),
+    commission: num(obj.commission, DEFAULT_COMMISSION),
+    labour:     num(obj.labour, DEFAULT_LABOUR),
+  };
+};
+
+const readMaterials = () => {
+  const row = prepare("SELECT value FROM app_settings WHERE key = 'materials'").get();
+  if (!row) return DEFAULT_MATERIALS;
+  try {
+    const list = JSON.parse(row.value);
+    return Array.isArray(list) && list.length ? list.map(toMaterial) : DEFAULT_MATERIALS;
+  } catch { return DEFAULT_MATERIALS; }
+};
+
+app.get('/api/settings/materials', (req, res) => {
+  try {
+    res.json({ success: true, data: readMaterials() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/settings/materials', (req, res) => {
+  try {
+    const { materials } = req.body;
+    if (!Array.isArray(materials)) return res.status(400).json({ success: false, error: 'materials must be a list' });
+    const cleaned = [];
+    materials.map(toMaterial).forEach(m => {
+      if (m.name && !cleaned.some(c => c.name === m.name)) cleaned.push(m);
+    });
+    if (!cleaned.length) return res.status(400).json({ success: false, error: 'Keep at least one material' });
+    // Guards against a client sending objects to a server that expects names (seen as "[object Object]")
+    if (cleaned.some(m => m.name === '[OBJECT OBJECT]')) return res.status(400).json({ success: false, error: 'Invalid material name' });
+    if (cleaned.some(m => m.name.length > 30)) return res.status(400).json({ success: false, error: 'Material names must be 30 characters or less' });
+    const badCommission = cleaned.find(m => m.commission < 0 || m.commission > 100);
+    if (badCommission) return res.status(400).json({ success: false, error: `Commission for ${badCommission.name} must be between 0 and 100%` });
+    const badLabour = cleaned.find(m => m.labour < 0);
+    if (badLabour) return res.status(400).json({ success: false, error: `Labour charge for ${badLabour.name} can't be negative` });
+    prepare(
+      "INSERT INTO app_settings (key, value, updated_at) VALUES ('materials', ?, CURRENT_TIMESTAMP) " +
+      'ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP'
+    ).run(JSON.stringify(cleaned));
+    res.json({ success: true, data: cleaned });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SETTINGS — seller bill numbering (prefix + zero-padded counter + suffix)
+// ══════════════════════════════════════════════════════════════════════════════
+
+const DEFAULT_BILL_CONFIG = { prefix: '', suffix: '', start: 1, digits: 1, next: 1 };
+
+const readBillConfig = () => {
+  const row = prepare("SELECT value FROM app_settings WHERE key = 'bill_number'").get();
+  if (!row) return { ...DEFAULT_BILL_CONFIG };
+  try { return { ...DEFAULT_BILL_CONFIG, ...JSON.parse(row.value) }; } catch { return { ...DEFAULT_BILL_CONFIG }; }
+};
+
+const writeBillConfig = (cfg) => prepare(
+  "INSERT INTO app_settings (key, value, updated_at) VALUES ('bill_number', ?, CURRENT_TIMESTAMP) " +
+  'ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP'
+).run(JSON.stringify(cfg));
+
+const formatBillNo = (cfg, n) => `${cfg.prefix}${String(n).padStart(cfg.digits, '0')}${cfg.suffix}`;
+
+// Issues the next bill number to a seller once; later calls return the same number.
+// Skips any number already used so a counter reset can never create duplicates.
+const assignBillNo = (sellerId) => {
+  const seller = prepare('SELECT id, bill_no FROM sellers WHERE id = ?').get(sellerId);
+  if (!seller) return null;
+  if (seller.bill_no) return seller.bill_no;
+  const cfg = readBillConfig();
+  let n = cfg.next;
+  let billNo = formatBillNo(cfg, n);
+  while (prepare('SELECT id FROM sellers WHERE bill_no = ?').get(billNo)) {
+    n += 1;
+    billNo = formatBillNo(cfg, n);
+  }
+  prepare('UPDATE sellers SET bill_no = ? WHERE id = ?').run(billNo, sellerId);
+  writeBillConfig({ ...cfg, next: n + 1 });
+  return billNo;
+};
+
+const billConfigResponse = (cfg) => {
+  const issued = prepare('SELECT COUNT(*) AS c FROM sellers WHERE bill_no IS NOT NULL').get();
+  return { ...cfg, nextBillNo: formatBillNo(cfg, cfg.next), issued: Number(issued && issued.c) || 0 };
+};
+
+app.get('/api/settings/bill-number', (req, res) => {
+  try {
+    res.json({ success: true, data: billConfigResponse(readBillConfig()) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/settings/bill-number', (req, res) => {
+  try {
+    const { prefix = '', suffix = '', start, digits, resetCounter } = req.body;
+    const startN = Number(start), digitsN = Number(digits);
+    if (!Number.isInteger(startN) || startN < 0) return res.status(400).json({ success: false, error: 'Starting number must be a whole number' });
+    if (!Number.isInteger(digitsN) || digitsN < 1 || digitsN > 10) return res.status(400).json({ success: false, error: 'Number of digits must be between 1 and 10' });
+    if (String(prefix).length > 20 || String(suffix).length > 20) return res.status(400).json({ success: false, error: 'Prefix and suffix must be 20 characters or less' });
+    const current = readBillConfig();
+    const cfg = {
+      prefix: String(prefix), suffix: String(suffix), start: startN, digits: digitsN,
+      // Counter only moves back when explicitly reset (e.g. new financial year); otherwise never below start
+      next: resetCounter ? startN : Math.max(current.next, startN),
+    };
+    writeBillConfig(cfg);
+    res.json({ success: true, data: billConfigResponse(cfg) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/sellers/:id/bill-number', (req, res) => {
+  try {
+    const billNo = assignBillNo(Number(req.params.id));
+    if (!billNo) return res.status(404).json({ success: false, error: 'Seller not found' });
+    res.json({ success: true, bill_no: billNo });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Bulk print: issue numbers for several sellers in the order given
+app.post('/api/sellers/bill-numbers', (req, res) => {
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    const data = {};
+    ids.forEach(id => { const b = assignBillNo(Number(id)); if (b) data[id] = b; });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PURCHASES (stock bought by the trader — Purchase List page)
+// ══════════════════════════════════════════════════════════════════════════════
+
+const validatePurchase = (body) => {
+  const { purchased_from, material, purchase_date, amount, weight } = body;
+  if (!purchased_from || !String(purchased_from).trim()) return 'Purchased from is required';
+  if (!material) return 'Material is required';
+  if (!purchase_date) return 'Date is required';
+  if (amount === undefined || amount === '' || isNaN(Number(amount)) || Number(amount) < 0) return 'Enter a valid amount';
+  if (weight !== undefined && weight !== '' && (isNaN(Number(weight)) || Number(weight) < 0)) return 'Enter a valid weight';
+  const bags = body.num_bags;
+  if (bags !== undefined && bags !== '' && (!Number.isInteger(Number(bags)) || Number(bags) < 0)) return 'Number of bags must be a whole number';
+  return null;
+};
+
+// Total paid so far against one purchase
+const purchasePaid = (purchaseId) => {
+  const row = prepare('SELECT COALESCE(SUM(amount), 0) AS paid FROM purchase_payments WHERE purchase_id = ?').get(purchaseId);
+  return Number(row && row.paid) || 0;
+};
+
+app.get('/api/purchases', (req, res) => {
+  try {
+    const purchases = prepare(
+      'SELECT p.*, COALESCE((SELECT SUM(pp.amount) FROM purchase_payments pp WHERE pp.purchase_id = p.id), 0) AS paid ' +
+      'FROM purchases p ORDER BY p.purchase_date DESC, p.created_at DESC'
+    ).all();
+    res.json({ success: true, data: purchases });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/purchases', (req, res) => {
+  try {
+    const error = validatePurchase(req.body);
+    if (error) return res.status(400).json({ success: false, error });
+    const { purchased_from, material, purchase_date, weight, amount, note, num_bags } = req.body;
+    const result = prepare(
+      'INSERT INTO purchases (purchased_from, material, purchase_date, num_bags, weight, amount, note) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(String(purchased_from).trim().toUpperCase(), String(material).toUpperCase(), purchase_date,
+      parseInt(num_bags) || 0, Number(weight) || 0, Number(amount), note || '');
+    res.json({ success: true, id: result.lastInsertRowid });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/purchases/:id', (req, res) => {
+  try {
+    const error = validatePurchase(req.body);
+    if (error) return res.status(400).json({ success: false, error });
+    const { purchased_from, material, purchase_date, weight, amount, note, num_bags } = req.body;
+    const paid = purchasePaid(Number(req.params.id));
+    if (Number(amount) < paid) {
+      return res.status(400).json({ success: false, error: `Amount can't be less than ₹${paid} already paid — delete a payment first` });
+    }
+    prepare(
+      'UPDATE purchases SET purchased_from = ?, material = ?, purchase_date = ?, num_bags = ?, weight = ?, amount = ?, note = ? WHERE id = ?'
+    ).run(String(purchased_from).trim().toUpperCase(), String(material).toUpperCase(), purchase_date,
+      parseInt(num_bags) || 0, Number(weight) || 0, Number(amount), note || '', req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/purchases/:id', (req, res) => {
+  try {
+    prepare('DELETE FROM purchase_payments WHERE purchase_id = ?').run(req.params.id);
+    prepare('DELETE FROM purchases WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Payments against a purchase (partial or full)
+app.get('/api/purchases/:id/payments', (req, res) => {
+  try {
+    const payments = prepare('SELECT * FROM purchase_payments WHERE purchase_id = ? ORDER BY payment_date DESC, created_at DESC').all(req.params.id);
+    res.json({ success: true, data: payments });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/purchases/:id/payments', (req, res) => {
+  try {
+    const purchaseId = Number(req.params.id);
+    const purchase = prepare('SELECT id, amount FROM purchases WHERE id = ?').get(purchaseId);
+    if (!purchase) return res.status(404).json({ success: false, error: 'Purchase not found' });
+    const { amount, payment_date, note } = req.body;
+    const amt = Number(amount);
+    if (!amt || amt <= 0 || isNaN(amt)) return res.status(400).json({ success: false, error: 'Enter a valid payment amount' });
+    if (!payment_date) return res.status(400).json({ success: false, error: 'Payment date is required' });
+    const balance = Number(purchase.amount) - purchasePaid(purchaseId);
+    if (amt > balance + 0.001) {
+      return res.status(400).json({ success: false, error: `Payment is more than the balance ₹${Math.max(0, balance)}` });
+    }
+    const result = prepare('INSERT INTO purchase_payments (purchase_id, amount, payment_date, note) VALUES (?, ?, ?, ?)')
+      .run(purchaseId, amt, payment_date, note || '');
+    res.json({ success: true, id: result.lastInsertRowid });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/purchase-payments/:id', (req, res) => {
+  try {
+    prepare('DELETE FROM purchase_payments WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 // SELLER ADVANCES (cash given to a seller before they sell their produce)
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -743,6 +1036,7 @@ app.delete('/api/seller-advances/:id', (req, res) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 initDb().then(() => {
+  auth.init();
   const server = app.listen(PORT, '127.0.0.1', () => {
     console.log(`✅ ph server running on http://127.0.0.1:${PORT}`);
   });

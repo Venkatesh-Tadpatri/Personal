@@ -1,6 +1,6 @@
 {
   "name": "ph",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "ph - Agricultural Trading Management System",
   "main": "main.js",
   "homepage": "./",
@@ -8,7 +8,7 @@
     "start": "electron .",
     "server": "node server.js",
     "client": "cd client && npm start",
-    "dev": "concurrently \"npm run server\" \"npm run client\" \"wait-on http://localhost:3000 && electron .\"",
+    "dev": "concurrently \"npm run server\" \"npm run client\" \"wait-on http://localhost:3200 && electron .\"",
     "build:client": "cd client && npm run build",
     "build": "npm run build:client && electron-builder",
     "postinstall": "electron-builder install-app-deps"
@@ -24,6 +24,7 @@
       "preload.js",
       "server.js",
       "database.js",
+      "auth.js",
       "package.json",
       "client/build/**/*",
       "node_modules/**/*",
@@ -35,10 +36,13 @@
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
+      "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "PH AgriTrader"
+      "shortcutName": "PH AgriTrader",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
     }
   },
   "keywords": [

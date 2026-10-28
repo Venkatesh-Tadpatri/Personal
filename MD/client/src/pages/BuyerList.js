@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { Search, Eye, Printer, Trash2, Edit2, Check, X, RefreshCw } from 'lucide-react';
+import { Search, Eye, Printer, Trash2, Edit2, Check, X, RefreshCw, ShoppingCart } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { getBuyers, updateBuyer, deleteBuyer as apiDeleteBuyer } from '../api';
 import { fmtINR, fmtNum, fmtDate, MATERIAL_BADGE, MATERIALS, todayISO } from '../utils';
 import ConfirmDialog from '../ConfirmDialog';
@@ -769,6 +770,7 @@ const cbStyle = (checked) => ({
 
 // ─── Main BuyerList ───────────────────────────────────────────
 export default function BuyerList() {
+  const navigate = useNavigate();
   const [buyers,         setBuyers]       = useState([]);
   const [buyerStats,     setBuyerStats]   = useState({});
   const [statsLoading,   setStatsLoading] = useState(true);
@@ -928,6 +930,9 @@ export default function BuyerList() {
           </div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
+          <button className="btn btn-primary" onClick={() => navigate('/buyer-registration')} title="Go to Buyer Registration">
+            <ShoppingCart size={15} /> Buyer Registration
+          </button>
           {selected.size > 0 && (
             <button
               className="btn btn-sm"

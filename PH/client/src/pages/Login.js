@@ -1,41 +1,32 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn, Wheat } from 'lucide-react';
+import { login, saveSession } from '../auth';
 
-// ── Credentials (change these as needed) ──────────────────────
-const VALID_USERS = [
-  { username: 'pramod', password: 'ph@1234' },
-  { username: 'admin',   password: 'admin@123' },
-];
-
-export default function Login({ onLogin }) {
+// Accounts live on the local server (admin manages them from the Admin Dashboard).
+// `notice` explains why a previous session ended, e.g. the licence ran out.
+export default function Login({ onLogin, notice = '' }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass]  = useState(false);
-  const [error,    setError]     = useState('');
+  const [error,    setError]     = useState(notice);
   const [loading,  setLoading]   = useState(false);
   const [shake,    setShake]     = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    setTimeout(() => {
-      const valid = VALID_USERS.find(
-        u => u.username === username.trim().toLowerCase() && u.password === password
-      );
-      if (valid) {
-        // Save to sessionStorage so refresh doesn't log out
-        sessionStorage.setItem('ph_logged_in', '1');
-        sessionStorage.setItem('ph_user', username.trim().toLowerCase());
-        onLogin(username.trim().toLowerCase());
-      } else {
-        setError('Invalid username or password');
-        setShake(true);
-        setTimeout(() => setShake(false), 600);
-      }
+    try {
+      // Trim the username — a stray space (autofill / paste) shouldn't fail an otherwise correct login
+      const session = await login(username.trim().toLowerCase(), password);
+      saveSession(session);
+      onLogin(session);
+    } catch (err) {
+      setError(err.message);
+      setShake(true);
+      setTimeout(() => setShake(false), 600);
       setLoading(false);
-    }, 600);
+    }
   };
 
   return (
@@ -74,7 +65,7 @@ export default function Login({ onLogin }) {
               margin:'0 auto 16px',
               boxShadow:'0 8px 24px rgba(26,86,219,0.4)',
             }}>
-              <span style={{ fontSize:28 }}>🌾</span>
+              <span style={{ fontSize:26, fontWeight:800, color:'#fff' }}>pH</span>
             </div>
             <div style={{ fontSize:22, fontWeight:900, color:'var(--text-primary)', fontFamily:'var(--font-display)', marginBottom:4 }}>
               Mr. Pramod Heggani
@@ -94,13 +85,13 @@ export default function Login({ onLogin }) {
               {/* Username */}
               <div style={{ marginBottom:16 }}>
                 <label style={{ display:'block', fontSize:11, fontWeight:700, letterSpacing:1, textTransform:'uppercase', color:'var(--text-muted)', marginBottom:7 }}>
-                  Username
+                  Username or Email
                 </label>
                 <input
                   type="text"
                   value={username}
                   onChange={e => { setUsername(e.target.value); setError(''); }}
-                  placeholder="Enter username"
+                  placeholder="Enter username or email"
                   autoComplete="username"
                   autoFocus
                   style={{

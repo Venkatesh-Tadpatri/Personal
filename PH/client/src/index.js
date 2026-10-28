@@ -4,6 +4,10 @@ import './App.css';
 import App from './App';
 import ErrorBoundary from './ErrorBoundary';
 import SplashScreen from './SplashScreen';
+import { applyTheme, getStoredTheme } from './preferences';
+
+// Apply the saved theme before the first render so splash/login don't flash the wrong colours
+applyTheme(getStoredTheme());
 
 function Root() {
   // In development, server is already up (started by concurrently), skip splash

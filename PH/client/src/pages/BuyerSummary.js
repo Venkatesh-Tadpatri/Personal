@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { RefreshCw, TrendingUp, Users, ShoppingCart, Package, Download, Printer } from 'lucide-react';
 import axios from 'axios';
 import { fmtINR, fmtNum, todayISO, MATERIAL_BADGE } from '../utils';
+import { useSort, SortTh } from '../sorting';
 
 const API = axios.create({ baseURL: 'http://127.0.0.1:5000' });
 
@@ -46,7 +47,15 @@ function groupBuyerSummaryBags(bags) {
   return grouped;
 }
 
+// Caption text for the column the Buyer-wise Detail table is sorted by
+const BUYER_COL_LABELS = {
+  short: 'Short Name', name: 'Name', material: 'Material', lot: 'Lot No', bags: 'Bags', weight: 'Weight',
+  rate: 'Rate', amount: 'Amount', gross: 'Gross Amt', labour: 'Labour', extra: 'Extra Bag', market: 'Mkt Fee',
+  total: 'Total Amt', advance: 'Advance', balance: 'Balance',
+};
+
 export default function BuyerSummary() {
+  const { sort, toggleSort, sortRows } = useSort(null); // unsorted (server order) until a column is clicked
   const [buyers,     setBuyers]     = useState([]);
   const [sellers,    setSellers]    = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -156,6 +165,23 @@ export default function BuyerSummary() {
   // Grand totals
   const grandBags    = buyerRows.reduce((s, r) => s + r.numBags,     0);
   const grandWeight  = buyerRows.reduce((s, r) => s + r.totalWeight, 0);
+  const sortedBuyerRows = sortRows(buyerRows, {
+    short:    r => r.buyer.serial_number,
+    name:     r => r.buyer.name,
+    material: r => r.subRows.map(g => g.material).join(', '),
+    lot:      r => r.bags[0] && r.bags[0].lot,
+    bags:     r => r.numBags,
+    weight:   r => r.totalWeight,
+    rate:     r => (r.totalWeight > 0 ? r.grossAmt / r.totalWeight * 100 : null),
+    amount:   r => r.grossAmt,
+    gross:    r => r.grossAmt,
+    labour:   r => r.labourAmt,
+    extra:    r => r.extraBagAmt,
+    market:   r => r.marketFee,
+    total:    r => r.totalAmt,
+    advance:  r => r.advance,
+    balance:  r => r.balance,
+  });
   const grandGross   = buyerRows.reduce((s, r) => s + r.grossAmt,    0);
   const grandLabour  = buyerRows.reduce((s, r) => s + r.labourAmt,   0);
   const grandMarket  = buyerRows.reduce((s, r) => s + r.marketFee,   0);
@@ -423,7 +449,7 @@ export default function BuyerSummary() {
               <div className="card-title" style={{ margin:0 }}>
                 🛒 Buyer-wise Detail &nbsp;
                 <span style={{ fontSize:12, color:'var(--text-muted)', fontWeight:400 }}>
-                  ({buyerRows.length} buyers with purchases · sorted by name)
+                  ({buyerRows.length} buyers with purchases · sorted by {sort.key ? BUYER_COL_LABELS[sort.key] + (sort.dir === 'asc' ? ' ↑' : ' ↓') : 'name'})
                 </span>
               </div>
               <button onClick={() => setShowTable(t => !t)} className="btn btn-secondary btn-sm">
@@ -439,58 +465,42 @@ export default function BuyerSummary() {
                     <h3>No buyer data for this period</h3>
                   </div>
                 ) : (
-                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, tableLayout:'fixed' }}>
-                    <colgroup>
-                      <col style={{ width:'44px' }}/>
-                      <col style={{ width:'86px' }}/>
-                      <col style={{ width:'120px' }}/>
-                      <col style={{ width:'90px' }}/>
-                      <col style={{ width:'70px' }}/>
-                      <col style={{ width:'48px' }}/>
-                      <col style={{ width:'92px' }}/>
-                      <col style={{ width:'104px' }}/>
-                      <col style={{ width:'102px' }}/>
-                      <col style={{ width:'108px' }}/>
-                      <col style={{ width:'88px' }}/>
-                      <col style={{ width:'104px' }}/>
-                      <col style={{ width:'92px' }}/>
-                      <col style={{ width:'108px' }}/>
-                      <col style={{ width:'92px' }}/>
-                      <col style={{ width:'108px' }}/>
-                    </colgroup>
+                  <table className="report-table" style={{ width:'100%', borderCollapse:'collapse', fontSize:13, tableLayout:'auto' }}>
                     <thead>
                       <tr style={{ background:'var(--bg-panel)' }}>
                         {[
                           { label:'Sr',            align:'center' },
-                          { label:'Short Name',    align:'center' },
-                          { label:'Name',          align:'left'   },
-                          { label:'Material',      align:'center' },
-                          { label:'Lot No',        align:'center' },
-                          { label:'Bags',          align:'center' },
-                          { label:'Weight (kg)',   align:'right'  },
-                          { label:'Rate (/100kg)', align:'right'  },
-                          { label:'Amount (₹)',    align:'right'  },
-                          { label:'Gross Amt (₹)', align:'right'  },
-                          { label:'Labour (₹)',    align:'right'  },
-                          { label:'Extra Bag (₹)', align:'right'  },
-                          { label:'Mkt Fee (₹)',   align:'right'  },
-                          { label:'Total Amt (₹)', align:'right'  },
-                          { label:'Advance (₹)',   align:'right'  },
-                          { label:'Balance (₹)',   align:'right'  },
-                        ].map(h => (
-                          <th key={h.label} style={{
+                          { label:'Short Name',    align:'center', col:'short'    },
+                          { label:'Name',          align:'left',   col:'name'     },
+                          { label:'Material',      align:'center', col:'material' },
+                          { label:'Lot No',        align:'center', col:'lot'      },
+                          { label:'Bags',          align:'center', col:'bags'     },
+                          { label:'Weight (kg)',   align:'right',  col:'weight'   },
+                          { label:'Rate (/100kg)', align:'right',  col:'rate'     },
+                          { label:'Amount (₹)',    align:'right',  col:'amount'   },
+                          { label:'Gross Amt (₹)', align:'right',  col:'gross'    },
+                          { label:'Labour (₹)',    align:'right',  col:'labour'   },
+                          { label:'Extra Bag (₹)', align:'right',  col:'extra'    },
+                          { label:'Mkt Fee (₹)',   align:'right',  col:'market'   },
+                          { label:'Total Amt (₹)', align:'right',  col:'total'    },
+                          { label:'Advance (₹)',   align:'right',  col:'advance'  },
+                          { label:'Balance (₹)',   align:'right',  col:'balance'  },
+                        ].map(h => {
+                          const thStyle = {
                             padding:'10px 8px', textAlign:h.align,
                             fontSize:10, fontWeight:700, letterSpacing:0.8, textTransform:'uppercase',
                             color:'var(--text-muted)',
                             borderBottom:'2px solid var(--blue)',
                             borderRight:'1px solid var(--border)',
-                            whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-                          }}>{h.label}</th>
-                        ))}
+                          };
+                          return h.col
+                            ? <SortTh key={h.label} col={h.col} label={h.label} align={h.align} style={thStyle} sort={sort} onSort={toggleSort} />
+                            : <th key={h.label} style={thStyle}>{h.label}</th>;
+                        })}
                       </tr>
                     </thead>
                     <tbody>
-                      {buyerRows.map((r, ri) => {
+                      {sortedBuyerRows.map((r, ri) => {
                         const rowBg = ri % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-panel)';
                         const sn    = r.buyer.serial_number || '—';
                         // rowSpan must match the actual number of <tr> rendered for this
@@ -513,14 +523,14 @@ export default function BuyerSummary() {
                             return (
                               <tr key={r.buyer.id+'-'+si+'-'+bi} style={{ background:rowBg }}>
                                 {isBuyerFirst && <td rowSpan={buyerRowCount} style={{ ...buyerMerged, fontWeight:800, color:'var(--accent)', textAlign:'center', verticalAlign:'middle', fontSize:14 }}>{ri+1}</td>}
-                                {isBuyerFirst && <td rowSpan={buyerRowCount} style={{ ...buyerMerged, fontWeight:800, color:'#4fa3ff', fontFamily:'monospace', textAlign:'center' }}>{sn}</td>}
+                                {isBuyerFirst && <td rowSpan={buyerRowCount} style={{ ...buyerMerged, fontWeight:800, color:'#4fa3ff', fontFamily:'var(--font-body)', textAlign:'center' }}>{sn}</td>}
                                 {isBuyerFirst && <td rowSpan={buyerRowCount} style={{ ...buyerMerged, fontWeight:700, color:'var(--text-primary)', borderRight:'1px solid var(--border-light)' }}>{r.buyer.name}</td>}
                                 <td style={{ ...td, textAlign:'center' }}>
                                   {bag.material && bag.material !== '—'
                                     ? <span className={`badge ${badge}`}>{bag.material}</span>
                                     : <span style={{ color:'var(--text-muted)' }}>—</span>}
                                 </td>
-                                <td style={{ ...td, fontFamily:'monospace', fontWeight:700, textAlign:'center', color:'var(--blue)', fontSize:12 }}>{bag.lot}</td>
+                                <td style={{ ...td, fontFamily:'var(--font-body)', fontWeight:700, textAlign:'center', color:'var(--blue)', fontSize:12 }}>{bag.lot}</td>
                                 <td style={{ ...td, textAlign:'center', fontWeight:800, color:'var(--text-primary)' }}>{bagCount(bag)}</td>
                                 <td style={{ ...td, textAlign:'right', fontWeight:700, color:bag.weight>0?'var(--blue)':'var(--text-muted)' }}>{bag.weight>0?fmtNum(bag.weight):'—'}</td>
                                 <td style={{ ...td, textAlign:'right', fontWeight:700, color:bag.rate>0?'var(--green)':'var(--text-muted)' }}>{bag.rate>0?fmtNum(bag.rate):'—'}</td>

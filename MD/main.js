@@ -16,7 +16,7 @@ let serverProcess = null;
 const isDev = !app.isPackaged;
 
 // ── Set app name ──────────────────────────────────────────────
-app.setName('PH AgriTrader');
+app.setName('MD AgriTrader');
 
 function startServer() {
   // In packaged app, files are inside app.asar - use process.resourcesPath
@@ -61,7 +61,7 @@ function createWindow() {
     height: 900,
     minWidth: 1100,
     minHeight: 700,
-    title: 'PH AgriTrader',
+    title: 'MD AgriTrader',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -78,7 +78,7 @@ function createWindow() {
   console.log('[main] __dirname:', __dirname);
   console.log('[main] indexPath:', indexPath);
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
+    mainWindow.loadURL('http://localhost:3100');
   } else {
     mainWindow.loadFile(indexPath).catch(err => {
       console.error('[main] loadFile error:', err);

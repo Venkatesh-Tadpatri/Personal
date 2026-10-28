@@ -8,14 +8,14 @@
     "start": "electron .",
     "server": "node server.js",
     "client": "cd client && npm start",
-    "dev": "concurrently \"npm run server\" \"npm run client\" \"wait-on http://localhost:3000 && electron .\"",
+    "dev": "concurrently \"npm run server\" \"npm run client\" \"wait-on http://localhost:3100 && electron .\"",
     "build:client": "cd client && npm run build",
     "build": "npm run build:client && electron-builder",
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
-    "appId": "com.ph.agritrader",
-    "productName": "PH AgriTrader",
+    "appId": "com.md.agritrader",
+    "productName": "MD AgriTrader",
     "directories": {
       "output": "dist"
     },
@@ -24,6 +24,7 @@
       "preload.js",
       "server.js",
       "database.js",
+      "auth.js",
       "package.json",
       "client/build/**/*",
       "node_modules/**/*",
@@ -35,10 +36,13 @@
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
+      "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "PH AgriTrader"
+      "shortcutName": "MD AgriTrader",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
     }
   },
   "keywords": [

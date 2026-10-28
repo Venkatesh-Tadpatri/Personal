@@ -1120,8 +1120,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { Search, Eye, Printer, Trash2, Edit2, X, RefreshCw, Check, Package, CheckSquare } from 'lucide-react';
+import { Search, Eye, Printer, Trash2, Edit2, X, RefreshCw, Check, Package, CheckSquare, UserPlus } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { fmtINR, fmtNum, fmtDate, MATERIAL_BADGE, MATERIALS } from '../utils';
 import ConfirmDialog from '../ConfirmDialog';
 
@@ -2027,6 +2028,7 @@ const cbStyle = (checked) => ({
 
 // ─── Main ─────────────────────────────────────────────────────
 export default function SellerList() {
+  const navigate = useNavigate();
   const [sellers,  setSellers]  = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState('');
@@ -2107,6 +2109,9 @@ export default function SellerList() {
           </div>
         </div>
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          <button className="btn btn-primary" onClick={() => navigate('/seller-registration')} title="Go to Seller Registration">
+            <UserPlus size={15} /> Seller Registration
+          </button>
           {selectedCount > 0 && (
             <button
               className="btn btn-primary"

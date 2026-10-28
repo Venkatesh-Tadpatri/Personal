@@ -462,7 +462,7 @@ function createWindow() {
   console.log('[main] __dirname:', __dirname);
   console.log('[main] indexPath:', indexPath);
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
+    mainWindow.loadURL('http://localhost:3200');
   } else {
     mainWindow.loadFile(indexPath).catch(err => {
       console.error('[main] loadFile error:', err);

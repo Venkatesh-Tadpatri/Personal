@@ -36,10 +36,20 @@ export const MATERIAL_BADGE = {
   GINGER:    'badge-green',
   ONION:    'badge-blue',
   LEMONS:   'badge-purple',
+  OTHERS:   'badge-blue',
 };
 
 // All materials
-export const MATERIALS = ['TAMARIND', 'GINGER', 'ONION', 'LEMONS'];
+export const MATERIALS = ['TAMARIND', 'GINGER', 'ONION', 'LEMONS', 'OTHERS'];
+
+// Seller charges — defaults match the rates used before they became configurable per material
+export const DEFAULT_COMMISSION = 8;   // % of gross amount
+export const DEFAULT_LABOUR     = 20;  // ₹ per bag
+
+// Rates saved on a seller record (null/undefined → default; 0 is a valid rate)
+export const sellerCommissionPct = (seller) => Number(seller?.commission_rate ?? DEFAULT_COMMISSION);
+export const sellerLabourRate    = (seller) => Number(seller?.labour_rate ?? DEFAULT_LABOUR);
+export const sellerCommission    = (seller, gross) => Math.round(gross * sellerCommissionPct(seller) / 100);
 
 // Generate next serial number suggestion
 export const nextSerial = (prefix, existing) => {

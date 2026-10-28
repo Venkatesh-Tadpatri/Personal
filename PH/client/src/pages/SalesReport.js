@@ -6,8 +6,9 @@ import {
   ChevronDown, ChevronUp, Calendar, Filter
 } from 'lucide-react';
 import axios from 'axios';
-import { fmtINR, todayISO } from '../utils';
+import { fmtINR, todayISO, sellerCommission, sellerCommissionPct } from '../utils';
 import { BILL_CSS, toIndianWords } from './BuyerList';
+import { useSort, SortTh } from '../sorting';
 
 const API = axios.create({ baseURL: 'http://127.0.0.1:5000' });
 
@@ -56,7 +57,7 @@ function getLastNDays(n) {
   };
 }
 
-const COMMISSION_RATE = 0.08; // 8%
+// Commission is per seller (commission_rate, from the material's settings) — see sellerCommission()
 
 // ── Fetch all sellers in a date range, group by date ────────────────────────
 async function fetchSalesData(from, to) {
@@ -98,22 +99,26 @@ async function fetchSalesData(from, to) {
 
       // Auction amount = sum of all bag amounts
       let auctionAmount = 0;
+      let commissionExact = 0;
       list.forEach(s => {
+        let sellerAmount = 0;
         try {
           const bags = JSON.parse(s.bag_data || '[]');
-          bags.forEach(b => { auctionAmount += Number(b.amount) || 0; });
+          bags.forEach(b => { sellerAmount += Number(b.amount) || 0; });
         } catch {}
         // also count top-level amount if bag_data empty
         if (!s.bag_data || s.bag_data === '[]') {
-          auctionAmount += Number(s.amount) || 0;
+          sellerAmount += Number(s.amount) || 0;
         }
+        auctionAmount   += sellerAmount;
+        commissionExact += sellerAmount * sellerCommissionPct(s) / 100;
       });
 
       // const commission   = auctionAmount * COMMISSION_RATE;
       // const totalPayable = auctionAmount - commission; // amount payable to sellers after commission
       // const balance      = totalPayable - totalAdvance;
 
-      const commission   = Math.round(auctionAmount * COMMISSION_RATE);
+      const commission   = Math.round(commissionExact);
       const totalPayable = Math.round(auctionAmount - commission);
       const balance      = Math.round(totalPayable - totalAdvance);
 
@@ -175,7 +180,29 @@ function StatCard({ label, value, icon, color }) {
 }
 
 // ── Expandable row detail ────────────────────────────────────────────────────
+// Auction amount for one seller: sum of bag amounts, else the saved amount
+const sellerAuctionAmount = (s) => {
+  try {
+    const bags = JSON.parse(s.bag_data || '[]');
+    if (bags.length === 0) return Number(s.amount) || 0;
+    return bags.reduce((t, b) => t + (Number(b.amount) || 0), 0);
+  } catch { return Number(s.amount) || 0; }
+};
+
+const DETAIL_COLS = [
+  ['serial',   'Serial',          s => s.serial_number],
+  ['name',     'Name',            s => s.name],
+  ['material', 'Material',        s => s.material],
+  ['bags',     'Bags',            s => Number(s.num_bags) || 0],
+  ['weight',   'Weight (kg)',     s => Number(s.weight) || 0],
+  ['advance',  'Advance (₹)',     s => Number(s.advance_amount) || 0],
+  ['auction',  'Auction Amt (₹)', s => sellerAuctionAmount(s)],
+  ['commission', 'Commission (₹)', s => sellerCommission(s, sellerAuctionAmount(s))],
+];
+
 function RowDetail({ row }) {
+  const { sort, toggleSort, sortRows } = useSort('serial');
+  const detailSellers = sortRows(row.sellers, Object.fromEntries(DETAIL_COLS.map(([k, , get]) => [k, get])));
   return (
     <tr>
       <td colSpan={8} style={{ padding: 0, border: 'none' }}>
@@ -190,13 +217,14 @@ function RowDetail({ row }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: 'var(--bg-card)' }}>
-                  {['Serial', 'Name', 'Material', 'Bags', 'Weight (kg)', 'Advance (₹)', 'Auction Amt (₹)', 'Commission 8%'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                  {DETAIL_COLS.map(([col, label]) => (
+                    <SortTh key={col} col={col} label={label} sort={sort} onSort={toggleSort}
+                      style={{ padding: '8px 12px', fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }} />
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {row.sellers.map((s, i) => {
+                {detailSellers.map((s, i) => {
                   let auctAmt = 0;
                   try {
                     const bags = JSON.parse(s.bag_data || '[]');
@@ -205,19 +233,19 @@ function RowDetail({ row }) {
                   } catch { auctAmt = Number(s.amount) || 0; }
 
                   // const comm    = auctAmt * COMMISSION_RATE;
-                  const comm    = Math.round(auctAmt * COMMISSION_RATE);
+                  const comm    = sellerCommission(s, auctAmt);
                   return (
                     <tr key={s.id || i} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--bg-card)' }}>
                       <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--accent)' }}>{s.serial_number}</td>
                       <td style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</td>
                       <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>{s.material || '—'}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'center' }}>{s.num_bags}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{fmtN(s.weight)}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--blue)', fontFamily: 'monospace' }}>₹{fmt2(s.advance_amount)}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', color: 'var(--green)', fontWeight: 700 }}>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily:'var(--font-body)' }}>{fmtN(s.weight)}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--blue)', fontFamily:'var(--font-body)' }}>₹{fmt2(s.advance_amount)}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily:'var(--font-body)', color: 'var(--green)', fontWeight: 700 }}>
                         {auctAmt > 0 ? `₹${fmt2(auctAmt)}` : <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Pending</span>}
                       </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', color: 'var(--red)' }}>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily:'var(--font-body)', color: 'var(--red)' }}>
                         {auctAmt > 0 ? `₹${fmt2(comm)}` : '—'}
                       </td>
                     </tr>
@@ -296,11 +324,6 @@ export default function SalesReport() {
   const toggleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('desc'); }
-  };
-
-  const SortIcon = ({ field }) => {
-    if (sortField !== field) return null;
-    return sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />;
   };
 
   const thStyle = (field) => ({
@@ -418,7 +441,7 @@ export default function SalesReport() {
   <table class="deduct-table" style="margin-top:2px">
     <tbody>
       <tr class="net-row">
-        <td class="net-label">TOTAL PROFIT / COMMISSION (8%)</td>
+        <td class="net-label">TOTAL PROFIT / COMMISSION</td>
         <td class="net-value">&#8377; ${fmt2(totals.commission)}</td>
       </tr>
     </tbody>
@@ -559,17 +582,12 @@ export default function SalesReport() {
                     { label: 'Advance (₹)',        field: 'totalAdvance' },
                     { label: 'Auction Amt (₹)',    field: 'auctionAmount'},
                     { label: 'Profit Amount (₹)', field: 'commission'   },
-                  ].map(({ label, field }) => (
-                    <th
-                      key={label}
-                      style={thStyle(field)}
-                      onClick={() => field && toggleSort(field)}
-                    >
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        {label} <SortIcon field={field} />
-                      </span>
-                    </th>
-                  ))}
+                  ].map(({ label, field }) => (field ? (
+                    <SortTh key={label} col={field} label={label} style={thStyle(field)}
+                      align={thStyle(field).textAlign} sort={{ key: sortField, dir: sortDir }} onSort={toggleSort} />
+                  ) : (
+                    <th key={label} style={thStyle(field)}>{label}</th>
+                  )))}
                 </tr>
               </thead>
               <tbody>
@@ -618,22 +636,22 @@ export default function SalesReport() {
                         <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700 }}>{row.numBags}</td>
 
                         {/* Weight */}
-                        <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily: 'monospace' }}>{fmtN(row.totalWeight)}</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily:'var(--font-body)' }}>{fmtN(row.totalWeight)}</td>
 
                         {/* Advance */}
-                        <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily: 'monospace', color: 'var(--blue)' }}>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily:'var(--font-body)', color: 'var(--blue)' }}>
                           ₹{fmt2(row.totalAdvance)}
                         </td>
 
                         {/* Auction Amount */}
-                        <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: isPending ? 'var(--text-muted)' : 'var(--green)' }}>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily:'var(--font-body)', fontWeight: 700, color: isPending ? 'var(--text-muted)' : 'var(--green)' }}>
                           {isPending
                             ? <span style={{ fontSize: 11, fontStyle: 'italic' }}>Pending</span>
                             : `₹${fmt2(row.auctionAmount)}`}
                         </td>
 
                         {/* Commission */}
-                        <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily: 'monospace', color: 'var(--red)' }}>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily:'var(--font-body)', color: 'var(--red)' }}>
                           {isPending ? '—' : `₹${fmt2(row.commission)}`}
                         </td>
                       </tr>
@@ -651,10 +669,10 @@ export default function SalesReport() {
                     GRAND TOTAL — {sorted.length} day{sorted.length !== 1 ? 's' : ''}
                   </td>
                   <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800 }}>{totals.numBags}</td>
-                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, fontFamily: 'monospace' }}>{Math.round(totals.totalWeight).toLocaleString('en-IN')}</td>
-                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, fontFamily: 'monospace', color: 'var(--blue)' }}>₹{fmt2(totals.totalAdvance)}</td>
-                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, fontFamily: 'monospace', color: 'var(--green)' }}>₹{fmt2(totals.auctionAmount)}</td>
-                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, fontFamily: 'monospace', color: 'var(--red)' }}>₹{fmt2(totals.commission)}</td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, fontFamily:'var(--font-body)' }}>{Math.round(totals.totalWeight).toLocaleString('en-IN')}</td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, fontFamily:'var(--font-body)', color: 'var(--blue)' }}>₹{fmt2(totals.totalAdvance)}</td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, fontFamily:'var(--font-body)', color: 'var(--green)' }}>₹{fmt2(totals.auctionAmount)}</td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, fontFamily:'var(--font-body)', color: 'var(--red)' }}>₹{fmt2(totals.commission)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -666,7 +684,7 @@ export default function SalesReport() {
       {!loading && rows.length > 0 && (
         <div style={{ marginTop: 14, padding: '12px 16px', background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: 20 }}>
           <span>📌 <strong>Auction Amount</strong> = Sum of all bag sale amounts for the day</span>
-          <span>📌 <strong>Commission 8%</strong> = 8% deducted from Auction Amount</span>
+          <span>📌 <strong>Commission</strong> = each seller's material rate (Settings → Materials), deducted from Auction Amount</span>
           <span>📌 <em>Pending</em> = Rates not yet entered in Seller List</span>
         </div>
       )}

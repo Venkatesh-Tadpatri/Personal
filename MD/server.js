@@ -304,8 +304,18 @@ const { prepare, initDb } = require('./database');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE'], allowedHeaders: ['Content-Type'] }));
+app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE'], allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
+
+// ── Auth: accounts, licences, admin API (see auth.js) ─────────────────────────
+const auth = require('./auth')(app, prepare, {
+  // Created on first run only — passwords can then be changed from the app
+  seedUsers: [
+    // Admin signs in with this email; replaces the original "admin" login on existing installs
+    { username: 'venkateshtadpatri26@gmail.com', email: 'venkateshtadpatri26@gmail.com', password: 'Venku@308415', role: 'admin', replaces: 'admin' },
+    { username: 'moinuddin', password: 'md@1234',   role: 'user'  },
+  ],
+});
 
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -563,6 +573,7 @@ app.get('/api/summary', (req, res) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 initDb().then(() => {
+  auth.init();
   const server = app.listen(PORT, '127.0.0.1', () => {
     console.log(`✅ ph server running on http://127.0.0.1:${PORT}`);
   });

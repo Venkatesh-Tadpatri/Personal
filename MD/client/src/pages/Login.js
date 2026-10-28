@@ -1,59 +1,31 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn, Wheat } from 'lucide-react';
+import { login, saveSession } from '../auth';
 
-// ── Credentials (change these as needed) ──────────────────────
-const VALID_USERS = [
-  { username: 'moinuddin', password: 'md@1234' },
-  { username: 'admin',   password: 'admin@123' },
-];
-
-// Trial login policy for customer demo account
-// Update this date when needed (YYYY-MM-DD).
-const TRIAL_USER = 'moinuddin';
-const TRIAL_EXPIRES_ON = '2026-05-11';
-
-export default function Login({ onLogin }) {
+// Accounts and licences live on the local server (admin manages them from the Admin Dashboard).
+// `notice` explains why a previous session ended, e.g. the licence ran out.
+export default function Login({ onLogin, notice = '' }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass]  = useState(false);
-  const [error,    setError]     = useState('');
+  const [error,    setError]     = useState(notice);
   const [loading,  setLoading]   = useState(false);
   const [shake,    setShake]     = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    setTimeout(() => {
-      const normalizedUser = username.trim().toLowerCase();
-      const valid = VALID_USERS.find(
-        u => u.username === normalizedUser && u.password === password
-      );
-      if (valid) {
-        // Trial account expires after configured date (inclusive end at local midnight next day)
-        if (normalizedUser === TRIAL_USER) {
-          const expiresAt = new Date(`${TRIAL_EXPIRES_ON}T23:59:59`);
-          if (new Date() > expiresAt) {
-            setError(`Trial expired on ${TRIAL_EXPIRES_ON}. Please contact admin to continue.`);
-            setShake(true);
-            setTimeout(() => setShake(false), 600);
-            setLoading(false);
-            return;
-          }
-        }
-
-        // Save to sessionStorage so refresh doesn't log out
-        sessionStorage.setItem('ph_logged_in', '1');
-        sessionStorage.setItem('ph_user', normalizedUser);
-        onLogin(normalizedUser);
-      } else {
-        setError('Invalid username or password');
-        setShake(true);
-        setTimeout(() => setShake(false), 600);
-      }
+    try {
+      const session = await login(username.trim().toLowerCase(), password);
+      saveSession(session);
+      onLogin(session);
+    } catch (err) {
+      setError(err.message);
+      setShake(true);
+      setTimeout(() => setShake(false), 600);
       setLoading(false);
-    }, 600);
+    }
   };
 
   return (
@@ -112,13 +84,13 @@ export default function Login({ onLogin }) {
               {/* Username */}
               <div style={{ marginBottom:16 }}>
                 <label style={{ display:'block', fontSize:11, fontWeight:700, letterSpacing:1, textTransform:'uppercase', color:'var(--text-muted)', marginBottom:7 }}>
-                  Username
+                  Username or Email
                 </label>
                 <input
                   type="text"
                   value={username}
                   onChange={e => { setUsername(e.target.value); setError(''); }}
-                  placeholder="Enter username"
+                  placeholder="Enter username or email"
                   autoComplete="username"
                   autoFocus
                   style={{

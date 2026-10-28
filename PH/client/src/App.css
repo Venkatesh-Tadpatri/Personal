@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -30,8 +30,42 @@ input[type=number] { -moz-appearance: textfield; }
   --shadow: 0 4px 24px rgba(0,0,0,0.4);
   --radius: 14px;
   --radius-sm: 8px;
-  --font-display: 'Syne', sans-serif;
+  --font-display: var(--font-body); /* single normal font across the app */
   --font-body: 'DM Sans', sans-serif;
+  --banner-bg: linear-gradient(135deg, #0d1f3a 0%, #0f2d4a 50%, #0a1e35 100%);
+  --overlay: rgba(0,0,0,0.7);
+  --menu-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  --sidebar-width: 228px; /* fits the longest menu label ("Seller Registration" + active arrow) */
+  --sidebar-collapsed-width: 72px;
+  color-scheme: dark;
+}
+
+/* ── Light theme: same variable names, light values ─────────────────────── */
+[data-theme="light"] {
+  --bg-deep: #f2f5fa;
+  --bg-card: #ffffff;
+  --bg-panel: #f6f8fc;
+  --bg-hover: #e9eff7;
+  --accent: #d97706;
+  --accent-light: #f59e0b;
+  --accent-dim: rgba(217,119,6,0.12);
+  --green: #059669;
+  --green-dim: rgba(5,150,105,0.12);
+  --red: #dc2626;
+  --red-dim: rgba(220,38,38,0.10);
+  --blue: #2563eb;
+  --blue-dim: rgba(37,99,235,0.10);
+  --purple: #7c3aed;
+  --text-primary: #0f1d2e;
+  --text-secondary: #3f5269;
+  --text-muted: #74859b;
+  --border: #dce3ee;
+  --border-light: #c9d3e1;
+  --shadow: 0 4px 18px rgba(15,29,46,0.08);
+  --banner-bg: linear-gradient(135deg, #fff7e6 0%, #fdf2dc 50%, #f3f7ff 100%);
+  --overlay: rgba(15,29,46,0.45);
+  --menu-shadow: 0 10px 30px rgba(15,29,46,0.15);
+  color-scheme: light;
 }
 
 html, body, #root { height: 100%; overflow: hidden; }
@@ -55,14 +89,74 @@ body {
 
 /* Sidebar */
 .sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
   background: var(--bg-card);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  position: relative;
+  z-index: 20;
+  transition: width 0.2s ease, min-width 0.2s ease;
 }
+
+/* ── Collapsed sidebar: icon-only rail ───────────────────────────────────── */
+.sidebar.collapsed { width: var(--sidebar-collapsed-width); min-width: var(--sidebar-collapsed-width); }
+.sidebar.collapsed .sidebar-logo { padding: 14px 0 12px; display: flex; flex-direction: column; align-items: center; }
+.sidebar.collapsed .logo-icon { margin-bottom: 0; }
+.sidebar.collapsed .logo-title,
+.sidebar.collapsed .logo-sub,
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .nav-chevron,
+.sidebar.collapsed .profile-text { display: none; }
+.sidebar.collapsed .sidebar-nav { padding: 8px 10px; }
+.sidebar.collapsed .nav-section-label {
+  font-size: 0; padding: 0; margin: 8px 6px; height: 1px; background: var(--border);
+}
+.sidebar.collapsed .nav-item { justify-content: center; padding: 10px 0; }
+.sidebar.collapsed .profile-btn { justify-content: center; padding: 7px 0; }
+
+/* ── Header menus (Reports / Settings) ───────────────────────────────────── */
+.topbar-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  background: var(--bg-panel); border: 1px solid var(--border);
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s ease;
+}
+.icon-btn:hover, .icon-btn.open { color: var(--text-primary); border-color: var(--accent); }
+.menu-trigger {
+  display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px;
+  border-radius: var(--radius-sm); background: var(--bg-panel); border: 1px solid var(--border);
+  color: var(--text-secondary); font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.menu-trigger:hover, .menu-trigger.open { color: var(--text-primary); border-color: var(--accent); }
+.menu-trigger.active { color: var(--accent); background: var(--accent-dim); border-color: rgba(245,158,11,0.35); }
+.menu-wrap { position: relative; }
+.menu-panel {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 200; min-width: 220px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: var(--menu-shadow); padding: 6px; 
+}
+.menu-heading {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-muted); padding: 8px 10px 6px;
+}
+.menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px;
+  border: none; background: none; border-radius: 7px; cursor: pointer; text-align: left;
+  color: var(--text-secondary); font-family: var(--font-body); font-size: 13.5px; font-weight: 500;
+}
+.menu-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.menu-item.active { background: var(--accent-dim); color: var(--accent); }
+.theme-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 2px 4px 6px; }
+.theme-option {
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 0;
+  border-radius: 7px; border: 1px solid var(--border); background: var(--bg-panel);
+  color: var(--text-secondary); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.theme-option.selected { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
 
 .sidebar-logo {
   padding: 14px 20px 12px;
@@ -75,7 +169,10 @@ body {
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 6px;
-  font-size: 18px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a1300;
+  font-family: var(--font-body);
 }
 
 .logo-title {
@@ -83,7 +180,7 @@ body {
   font-size: 20px;
   font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
 }
 
 .logo-sub {
@@ -430,6 +527,7 @@ tbody td {
 .badge-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
 .badge-blue { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); }
 .badge-purple { background: rgba(139,92,246,0.15); color: var(--purple); border: 1px solid rgba(139,92,246,0.3); }
+.badge-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
 
 /* Filter bar */
 .filter-bar {
@@ -464,7 +562,7 @@ tbody td {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -560,7 +658,7 @@ tbody td {
   font-size: 22px;
   font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
 }
 
 .page-subtitle {
@@ -586,7 +684,7 @@ tbody td {
 
 /* Dashboard welcome */
 .welcome-banner {
-  background: linear-gradient(135deg, #0d1f3a 0%, #0f2d4a 50%, #0a1e35 100%);
+  background: var(--banner-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 28px 32px;
@@ -610,7 +708,7 @@ tbody td {
   font-size: 24px;
   font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
 }
 
 .welcome-sub {
@@ -623,3 +721,97 @@ tbody td {
 
 /* Two col layout */
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+/* ── Global search (header) ──────────────────────────────────────────────── */
+.global-search { position: relative; flex: 1; max-width: 420px; margin: 0 20px; }
+.global-search input {
+  width: 100%; height: 36px; padding: 0 32px 0 34px;
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-primary); font-family: var(--font-body); font-size: 13px; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.global-search input::placeholder { color: var(--text-muted); }
+.global-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.global-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.global-search-clear {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+  border: none; background: none; color: var(--text-muted); cursor: pointer; border-radius: 6px;
+}
+.global-search-clear:hover { background: var(--bg-hover); color: var(--text-primary); }
+.global-search-panel { left: 0; right: 0; max-height: 420px; overflow-y: auto; }
+.global-search-empty { padding: 12px 10px; font-size: 12.5px; color: var(--text-muted); }
+
+/* ══ Responsive layout ═══════════════════════════════════════════════════════
+   Goal: no sideways scrolling on common desktop resolutions (1280px and up).
+   Tables tighten in steps, header labels may wrap onto two lines, card/form grids
+   reflow to the available width, and popups never exceed the window. */
+
+/* Grids reflow instead of a fixed column count */
+.stats-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.form-grid  { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+/* Table headers can wrap (e.g. "TOTAL WEIGHT(KG)") so columns aren't forced wide */
+thead th { white-space: normal; padding: 12px 14px; letter-spacing: 0.8px; vertical-align: middle; }
+tbody td { padding: 12px 14px; }
+
+/* Popups: never wider or taller than the window */
+.modal { max-width: calc(100vw - 32px); }
+
+@media (max-width: 1600px) {
+  thead th { padding: 11px 11px; letter-spacing: 0.6px; }
+  tbody td { padding: 11px 11px; }
+  table { font-size: 13px; }
+}
+
+@media (max-width: 1440px) {
+  .page-content { padding: 22px 24px; }
+  .topbar { padding: 0 24px; }
+  .topbar-version { display: none !important; }
+  .card { padding: 20px; }
+}
+
+@media (max-width: 1366px) {
+  thead th { padding: 10px 8px; font-size: 10.5px; letter-spacing: 0.4px; }
+  tbody td { padding: 10px 8px; }
+  table { font-size: 12.5px; }
+  .btn-sm { padding: 6px 10px; }
+  .page-title { font-size: 20px; }
+  .stat-value { font-size: 22px; }
+  .global-search { max-width: 320px; margin: 0 12px; }
+}
+
+@media (max-width: 1280px) {
+  .page-content { padding: 18px 18px; }
+  .topbar { padding: 0 18px; }
+  .topbar-status { display: none !important; }
+  .two-col { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 1100px) {
+  thead th { padding: 9px 6px; font-size: 10px; }
+  tbody td { padding: 9px 6px; }
+  table { font-size: 12px; }
+  .btn-sm { padding: 5px 8px; font-size: 11.5px; }
+  .topbar-date-text { display: none; }
+  .global-search { max-width: 240px; }
+  .card { padding: 16px; }
+}
+
+/* Wide report tables (Seller/Buyer Summary, Buyer Ledger statement) set padding inline,
+   so tighten them here on smaller screens */
+@media (max-width: 1366px) {
+  .report-table th, .report-table td { padding: 8px 5px !important; font-size: 11.5px !important; }
+  .report-table th { letter-spacing: 0.3px !important; }
+}
+@media (max-width: 1100px) {
+  .report-table th, .report-table td { padding: 7px 4px !important; font-size: 11px !important; }
+  .btn-text { display: none; }   /* action buttons become icon-only; title tooltips remain */
+}
+@media (max-width: 1100px) {
+  /* Let names/dates wrap in list tables; amounts keep their own nowrap */
+  .table-wrapper tbody td { white-space: normal; }
+  .table-wrapper tbody td .badge { white-space: nowrap; }
+}
+
+/* Sidebar labels stay on one line; if a fallback font is wider, they shorten with … instead of wrapping */
+.nav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

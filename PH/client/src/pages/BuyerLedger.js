@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { RefreshCw, Plus, Edit2, Trash2, Check, X, Printer, Eye, Wallet } from 'lucide-react';
 import axios from 'axios';
 import { todayISO } from '../utils';
 import { buildBuyerBillHtml, groupBuyerRows, BILL_CSS, toIndianWords } from './BuyerList';
 import ConfirmDialog from '../ConfirmDialog';
+import { useSort, SortTh as SharedSortTh } from '../sorting';
 
 const API = axios.create({ baseURL: 'http://127.0.0.1:5000' });
 
@@ -422,8 +424,12 @@ function AddPaymentRow({ buyerName, onAdded }) {
   );
 }
 
-function BuyerLedgerRow({ buyer, buyerKey, sellers, allPurchasesByDate, totalPurchased, totalPaid, balance, allPayments, allDues, onPaymentChange, onDeleteBuyer, isDuplicateName }) {
+function BuyerLedgerRow({ slNo, buyer, buyerKey, sellers, allPurchasesByDate, totalPurchased, totalPaid, balance, allPayments, allDues, onPaymentChange, onDeleteBuyer, isDuplicateName, autoOpen, onAutoOpened }) {
   const [expanded, setExpanded] = useState(false);
+  // Opened from the header search → show this buyer's ledger view straight away
+  useEffect(() => {
+    if (autoOpen) { setExpanded(true); onAutoOpened && onAutoOpened(); }
+  }, [autoOpen]); // eslint-disable-line react-hooks/exhaustive-deps
   const [payBillEntry, setPayBillEntry] = useState(null);
   const [payDueEntry, setPayDueEntry] = useState(null);
   const [confirm, setConfirm] = useState(null);
@@ -517,6 +523,27 @@ function BuyerLedgerRow({ buyer, buyerKey, sellers, allPurchasesByDate, totalPur
     ...allPurchasesByDate.map(d => ({ kind: 'purchase', sortKey: d.date, ...d })),
     ...payments.map(p => ({ kind: 'payment', sortKey: p.payment_date, ...p })),
   ].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+  // Column sort for the statement. Rows stay under their section heading (Old Dues →
+  // Purchases → Payments) and sort within it; sorting by Type reorders the sections.
+  const KIND_ORDER = ['due', 'purchase', 'payment'];
+  const stmtValue = {
+    date:     e => e.sortKey,
+    type:     e => KIND_ORDER.indexOf(e.kind),
+    details:  e => (e.kind === 'purchase' ? e.material : e.note),
+    amount:   e => (e.kind === 'payment' ? null : Number(e.amount)),
+    paid:     e => (e.kind === 'due' ? paidForDue(e) : e.kind === 'purchase' ? paidForBill(e) : Number(e.amount)),
+    due:      e => (e.kind === 'payment' ? null : Number(e.amount) - (e.kind === 'due' ? paidForDue(e) : paidForBill(e))),
+    paidDate: e => (e.kind === 'payment' ? e.payment_date
+      : payments.filter(p => (e.kind === 'due' ? p.due_id === e.id : p.bill_date === e.date && p.bill_material === e.material))
+          .map(p => p.payment_date).sort()[0]),
+  };
+  const { sort: stmtSort, toggleSort: toggleStmtSort, sortRows: sortStmt } = useSort(null);
+  const sectionOrder = stmtSort.key === 'type' && stmtSort.dir === 'desc' ? [...KIND_ORDER].reverse() : KIND_ORDER;
+  const statementRows = !stmtSort.key ? ledgerRows : sectionOrder.flatMap(kind => {
+    const inSection = ledgerRows.filter(r => r.kind === kind);
+    return stmtSort.key === 'type' ? inSection : sortStmt(inSection, stmtValue);
+  });
 
   const viewBill = (e, date, material, includeExtraCharge) => {
     e.stopPropagation();
@@ -663,6 +690,7 @@ function BuyerLedgerRow({ buyer, buyerKey, sellers, allPurchasesByDate, totalPur
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer' }}
         onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
         onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; }}>
+        <td style={{ ...tdS, color: 'var(--text-muted)', fontSize: 12, width: 44 }}>{slNo}</td>
         <td style={{ ...tdS, fontWeight: 700 }}>
           {buyer.name}
           {isDuplicateName && (
@@ -685,20 +713,20 @@ function BuyerLedgerRow({ buyer, buyerKey, sellers, allPurchasesByDate, totalPur
           <button onClick={e => { e.stopPropagation(); setExpanded(true); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--accent)', color: '#fff',
               border: 'none', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-            <Eye size={13} /> View
+            <Eye size={13} /> <span className="btn-text">View</span>
           </button>
           <button onClick={e => { e.stopPropagation(); onDeleteBuyer(buyerKey, buyer.name); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'none', color: '#ef4444',
               border: '1px solid rgba(239,68,68,0.4)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer',
               fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-            <Trash2 size={13} /> Delete
+            <Trash2 size={13} /> <span className="btn-text">Delete</span>
           </button>
         </td>
       </tr>
 
       {expanded && (
         <div style={overlayS} onClick={() => setExpanded(false)}>
-          <div style={{ ...modalS, width: 950, maxWidth: '95vw', maxHeight: '88vh', overflowY: 'auto', padding: 0 }}
+          <div style={{ ...modalS, width: 1240, maxWidth: '95vw', maxHeight: '88vh', overflowY: 'auto', padding: 0 }}
             onClick={e => e.stopPropagation()}>
             <div style={{ padding: '16px 24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -722,16 +750,16 @@ function BuyerLedgerRow({ buyer, buyerKey, sellers, allPurchasesByDate, totalPur
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'var(--text-primary)' }}>
               Transaction History
             </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <table className="report-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--bg-card)' }}>
-                  <th style={thS}>Date</th>
-                  <th style={thS}>Type</th>
-                  <th style={thS}>Details</th>
-                  <th style={{ ...thS, textAlign: 'right' }}>Amount</th>
-                  <th style={{ ...thS, textAlign: 'right' }}>Paid</th>
-                  <th style={{ ...thS, textAlign: 'right' }}>Due</th>
-                  <th style={thS}>Paid Date</th>
+                  <SortTh col="date" label="Date" sort={stmtSort} onSort={toggleStmtSort} />
+                  <SortTh col="type" label="Type" sort={stmtSort} onSort={toggleStmtSort} />
+                  <SortTh col="details" label="Details" sort={stmtSort} onSort={toggleStmtSort} />
+                  <SortTh col="amount" label="Amount" align="right" sort={stmtSort} onSort={toggleStmtSort} />
+                  <SortTh col="paid" label="Paid" align="right" sort={stmtSort} onSort={toggleStmtSort} />
+                  <SortTh col="due" label="Due" align="right" sort={stmtSort} onSort={toggleStmtSort} />
+                  <SortTh col="paidDate" label="Paid Date" sort={stmtSort} onSort={toggleStmtSort} />
                   <th style={{ ...thS, textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
@@ -742,7 +770,7 @@ function BuyerLedgerRow({ buyer, buyerKey, sellers, allPurchasesByDate, totalPur
                   let shownDueHeading = false;
                   let shownPurchaseHeading = false;
                   let shownPaymentHeading = false;
-                  return ledgerRows.flatMap((e, i) => {
+                  return statementRows.flatMap((e, i) => {
                     const rows = [];
                     if (e.kind === 'due' && !shownDueHeading) {
                       shownDueHeading = true;
@@ -813,7 +841,7 @@ function BuyerLedgerRow({ buyer, buyerKey, sellers, allPurchasesByDate, totalPur
                             style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'none',
                               border: '1px solid var(--border)', borderRadius: 6, padding: '3px 9px',
                               cursor: 'pointer', color: 'var(--accent)', fontSize: 11.5, fontWeight: 600 }}>
-                            <Eye size={12} /> View Bill
+                            <Eye size={12} /> <span className="btn-text">View Bill</span>
                           </button>
                           <button onClick={ev => { ev.stopPropagation(); setPayBillEntry(e); }}
                             disabled={due <= 0}
@@ -830,7 +858,7 @@ function BuyerLedgerRow({ buyer, buyerKey, sellers, allPurchasesByDate, totalPur
                               background: 'none', color: paid > 0 ? 'var(--text-muted)' : '#ef4444',
                               border: `1px solid ${paid > 0 ? 'var(--border)' : 'rgba(239,68,68,0.4)'}`, borderRadius: 6, padding: '3px 9px', marginLeft: 6,
                               cursor: paid > 0 ? 'default' : 'pointer', fontSize: 11.5, fontWeight: 600 }}>
-                            <Trash2 size={12} /> Delete
+                            <Trash2 size={12} /> <span className="btn-text">Delete</span>
                           </button>
                         </td>
                       </tr>
@@ -899,13 +927,27 @@ function BuyerLedgerRow({ buyer, buyerKey, sellers, allPurchasesByDate, totalPur
 
 const tdS = { padding: '8px 10px', verticalAlign: 'middle' };
 const thS = { padding: '8px 10px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' };
+
+// Sortable ledger columns — value used for ordering each buyer row
+const SORT_VALUE = {
+  name:      r => r.buyer.name,
+  short:     r => ((r.buyer.lot_number && r.buyer.lot_number !== '—') ? r.buyer.lot_number : ''),
+  mobile:    r => r.buyer.mobile,
+  purchased: r => r.totalPurchased,
+  paid:      r => r.totalPaid,
+  balance:   r => r.balance,
+  status:    r => (r.balance > 0 ? 1 : 0),
+};
+
+// Ledger tables use the shared sortable header with this page's header style
+const SortTh = (props) => <SharedSortTh style={thS} {...props} />;
 const inputS = { background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', color: 'var(--text-primary)', fontSize: 12, width: '100%' };
 const iconBtnS = (color) => ({ background: 'none', border: 'none', cursor: 'pointer', color, padding: '2px 4px', borderRadius: 4, display: 'inline-flex', alignItems: 'center' });
 const badgeS = (color) => ({ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: `${color}20`, color, textTransform: 'uppercase', letterSpacing: '0.03em' });
 const sectionHeadingS = (color) => ({ padding: '8px 10px', background: 'var(--bg-panel)', color, fontSize: 11.5,
   fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' });
 const labelS = { display: 'block', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' };
-const overlayS = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)',
+const overlayS = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--overlay)',
   display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
 const modalS = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
   padding: 22, width: 360, boxShadow: '0 12px 40px rgba(0,0,0,0.4)' };
@@ -921,11 +963,18 @@ function AddBuyerModal({ existingBuyers, onClose, onAdded }) {
   const [shortName, setShortName] = useState('');
   const [mobile, setMobile] = useState('');
   const [entryDate, setEntryDate] = useState(todayISO());
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  // Buyers saved via "Save & New" in this session — the parent list reloads asynchronously,
+  // so include them in the duplicate checks right away
+  const [justAdded, setJustAdded] = useState([]);
+  const nameInputRef = useRef(null);
+  const knownBuyers = [...existingBuyers, ...justAdded];
 
   const shortNameUpper = shortName.trim().toUpperCase();
   const conflict = shortNameUpper
-    ? existingBuyers.find(b =>
+    ? knownBuyers.find(b =>
         (b.lot_number || '').trim().toUpperCase() === shortNameUpper ||
         (b.serial_number || '').trim().toUpperCase() === shortNameUpper
       )
@@ -936,13 +985,15 @@ function AddBuyerModal({ existingBuyers, onClose, onAdded }) {
   // rather than letting the short name silently disambiguate everywhere downstream.
   const nameUpper = name.trim().toUpperCase();
   const nameConflict = nameUpper
-    ? existingBuyers.find(b => (b.name || '').trim().toUpperCase() === nameUpper)
+    ? knownBuyers.find(b => (b.name || '').trim().toUpperCase() === nameUpper)
     : null;
 
-  const save = async () => {
+  // keepOpen = "Save & New": clear the form for the next buyer instead of closing
+  const save = async (keepOpen = false) => {
     if (!name.trim()) return toast.error('Enter buyer name');
     if (conflict) return toast.error(`Short name already used by ${conflict.name}`);
     if (nameConflict) return toast.error(`A buyer named "${name}" already exists — add an initial to tell them apart`);
+    if (amount && (isNaN(Number(amount)) || Number(amount) < 0)) return toast.error('Enter valid amount');
     setSaving(true);
     try {
       const payload = {
@@ -958,9 +1009,21 @@ function AddBuyerModal({ existingBuyers, onClose, onAdded }) {
         bag_data:       '[]',
       };
       await API.post('/api/buyers', payload);
+      // Amount is recorded as the buyer's old / opening due, keyed the same way the ledger matches dues
+      if (Number(amount) > 0) {
+        await API.post('/api/buyer-dues', {
+          buyer_name: shortNameUpper || payload.name, amount: Number(amount), due_date: entryDate, note: note.trim(),
+        });
+      }
       toast.success(`${payload.name} added`);
       onAdded();
-      onClose();
+      if (keepOpen) {
+        setJustAdded(prev => [...prev, payload]);
+        setName(''); setShortName(''); setMobile(''); setAmount(''); setNote('');
+        nameInputRef.current?.focus();
+      } else {
+        onClose();
+      }
     } catch (err) { toast.error(err?.response?.data?.error || 'Failed to add buyer'); }
     setSaving(false);
   };
@@ -976,7 +1039,7 @@ function AddBuyerModal({ existingBuyers, onClose, onAdded }) {
         <label style={labelS}>Buyer Name</label>
         <input type="text" value={name} onChange={e => setName(e.target.value.toUpperCase())}
           style={{ ...inputS, marginBottom: nameConflict ? 4 : 10, borderColor: nameConflict ? '#ef4444' : undefined }}
-          placeholder="FULL NAME" autoFocus />
+          placeholder="FULL NAME" autoFocus ref={nameInputRef} />
         {nameConflict && (
           <div style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>
             A buyer named "{name}" already exists — add an initial (e.g. {name} K)
@@ -997,11 +1060,23 @@ function AddBuyerModal({ existingBuyers, onClose, onAdded }) {
 
         <label style={labelS}>Entry Date</label>
         <input type="date" value={entryDate} onChange={e => setEntryDate(e.target.value)}
-          style={{ ...inputS, marginBottom: 18 }} />
+          style={{ ...inputS, marginBottom: 10 }} />
+
+        <label style={labelS}>Amount (₹)</label>
+        <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
+          style={{ ...inputS, marginBottom: 10 }} placeholder="Old / opening due (optional)" min="0" onWheel={e => e.target.blur()} />
+
+        <label style={labelS}>Note</label>
+        <input type="text" value={note} onChange={e => setNote(e.target.value)}
+          style={{ ...inputS, marginBottom: 18 }} placeholder="e.g. Balance from old book" />
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={secondaryBtnS}>Cancel</button>
-          <button onClick={save} disabled={saving || !!conflict || !!nameConflict} style={{ ...primaryBtnS, opacity: (saving || conflict || nameConflict) ? 0.7 : 1 }}>
+          <button onClick={onClose} style={secondaryBtnS}>{justAdded.length ? 'Done' : 'Cancel'}</button>
+          <button onClick={() => save(true)} disabled={saving || !!conflict || !!nameConflict}
+            style={{ ...secondaryBtnS, color: 'var(--accent)', borderColor: 'var(--accent)', opacity: (saving || conflict || nameConflict) ? 0.7 : 1 }}>
+            Save & New
+          </button>
+          <button onClick={() => save(false)} disabled={saving || !!conflict || !!nameConflict} style={{ ...primaryBtnS, opacity: (saving || conflict || nameConflict) ? 0.7 : 1 }}>
             {saving ? 'Saving...' : 'Add Buyer'}
           </button>
         </div>
@@ -1022,6 +1097,16 @@ export default function BuyerLedger() {
   const [filterYear, setFilterYear] = useState('');
   const [filterMonth, setFilterMonth] = useState('');
   const [statusTab, setStatusTab] = useState('all'); // 'all' | 'unpaid' | 'settled'
+  // Opened from the header search: clear filters that could hide the buyer, then open their view
+  const location = useLocation();
+  const [focusKey, setFocusKey] = useState(null);
+  useEffect(() => {
+    const key = location.state?.focusBuyer;
+    if (!key) return;
+    setSearch(''); setStatusTab('all'); setFilterDate(''); setFilterYear(''); setFilterMonth('');
+    setFocusKey(key);
+  }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { sort, toggleSort, sortRows } = useSort('name');
   const [confirm, setConfirm] = useState(null);
 
   const load = useCallback(async () => {
@@ -1197,7 +1282,7 @@ export default function BuyerLedger() {
 
   // Status tab + date/month/year lookup + search narrow down which buyers appear in the
   // table — the totals shown for each one are still their full all-time figures.
-  const filtered = withTotals.filter(({ buyer, key, balance }) => {
+  const filtered = sortRows(withTotals.filter(({ buyer, key, balance }) => {
     if (filterDate && !activeDateKeys.has(key)) return false;
     if ((filterYear || filterMonth) && !activeMonthKeys.has(key)) return false;
     if (statusTab === 'unpaid' && !(balance > 0)) return false;
@@ -1205,7 +1290,7 @@ export default function BuyerLedger() {
     if (search && !buyer.name.toLowerCase().includes(search.toLowerCase()) &&
         !(buyer.serial_number || '').toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  });
+  }), SORT_VALUE); // column sort also drives the Print / PDF order
 
   const unpaidCount  = withTotals.filter(r => r.balance > 0).length;
   const settledCount = withTotals.filter(r => r.balance <= 0).length;
@@ -1325,14 +1410,12 @@ export default function BuyerLedger() {
   };
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
+    <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div className="page-header">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Buyer Ledger</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>
-            Payment tracking & balance for all buyers
-          </p>
+          <div className="page-title">Buyer Ledger</div>
+          <div className="page-subtitle">Payment tracking & balance for all buyers</div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => setShowAddBuyer(true)}
@@ -1364,7 +1447,7 @@ export default function BuyerLedger() {
       {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
 
       {/* Summary cards — always all-time totals across every buyer, regardless of filters */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
         {[
           { label: 'Total Purchased (All Buyers)', value: grandPurchased, color: 'var(--accent)' },
           { label: 'Total Paid (All Buyers)', value: grandPaid, color: '#22c55e' },
@@ -1466,25 +1549,27 @@ export default function BuyerLedger() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: 'var(--bg-panel)', borderBottom: '2px solid var(--border)' }}>
-              <th style={thS}>Buyer Name</th>
-              <th style={thS}>Short Name</th>
-              <th style={thS}>Mobile</th>
-              <th style={{ ...thS, textAlign: 'right' }}>Total Purchased</th>
-              <th style={{ ...thS, textAlign: 'right' }}>Total Paid</th>
-              <th style={{ ...thS, textAlign: 'right' }}>Balance Due</th>
-              <th style={{ ...thS, textAlign: 'center' }}>Status</th>
+              <th style={{ ...thS, width: 44 }}>#</th>
+              <SortTh col="name" label="Buyer Name" sort={sort} onSort={toggleSort} />
+              <SortTh col="short" label="Short Name" sort={sort} onSort={toggleSort} />
+              <SortTh col="mobile" label="Mobile" sort={sort} onSort={toggleSort} />
+              <SortTh col="purchased" label="Total Purchased" align="right" sort={sort} onSort={toggleSort} />
+              <SortTh col="paid" label="Total Paid" align="right" sort={sort} onSort={toggleSort} />
+              <SortTh col="balance" label="Balance Due" align="right" sort={sort} onSort={toggleSort} />
+              <SortTh col="status" label="Status" align="center" sort={sort} onSort={toggleSort} />
               <th style={{ ...thS, textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ ...tdS, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Loading...</td></tr>
+              <tr><td colSpan={9} style={{ ...tdS, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Loading...</td></tr>
             ) : filteredWithPurchases.length === 0 ? (
-              <tr><td colSpan={8} style={{ ...tdS, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>No buyers found</td></tr>
+              <tr><td colSpan={9} style={{ ...tdS, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>No buyers found</td></tr>
             ) : (
-              filteredWithPurchases.map(({ buyer, key, allPurchasesByDate, totalPurchased, totalPaid, balance }) => (
+              filteredWithPurchases.map(({ buyer, key, allPurchasesByDate, totalPurchased, totalPaid, balance }, i) => (
                 <BuyerLedgerRow
                   key={key}
+                  slNo={i + 1}
                   buyer={buyer}
                   buyerKey={key}
                   sellers={sellers}
@@ -1497,6 +1582,8 @@ export default function BuyerLedger() {
                   onPaymentChange={load}
                   onDeleteBuyer={deleteBuyer}
                   isDuplicateName={nameCounts[buyer.name.trim().toUpperCase()] > 1}
+                  autoOpen={focusKey === key}
+                  onAutoOpened={() => setFocusKey(null)}
                 />
               ))
             )}
@@ -1525,20 +1612,22 @@ export default function BuyerLedger() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'rgba(245,158,11,0.08)', borderBottom: '2px solid var(--border)' }}>
-                  <th style={thS}>Buyer Name</th>
-                  <th style={thS}>Short Name</th>
-                  <th style={thS}>Mobile</th>
-                  <th style={{ ...thS, textAlign: 'right' }}>Total Purchased</th>
-                  <th style={{ ...thS, textAlign: 'right' }}>Total Paid</th>
-                  <th style={{ ...thS, textAlign: 'right' }}>Balance Due</th>
-                  <th style={{ ...thS, textAlign: 'center' }}>Status</th>
+                  <th style={{ ...thS, width: 44 }}>#</th>
+              <SortTh col="name" label="Buyer Name" sort={sort} onSort={toggleSort} />
+                  <SortTh col="short" label="Short Name" sort={sort} onSort={toggleSort} />
+                  <SortTh col="mobile" label="Mobile" sort={sort} onSort={toggleSort} />
+                  <SortTh col="purchased" label="Total Purchased" align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh col="paid" label="Total Paid" align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh col="balance" label="Balance Due" align="right" sort={sort} onSort={toggleSort} />
+                  <SortTh col="status" label="Status" align="center" sort={sort} onSort={toggleSort} />
                   <th style={{ ...thS, textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredManualOnly.map(({ buyer, key, allPurchasesByDate, totalPurchased, totalPaid, balance }) => (
+                {filteredManualOnly.map(({ buyer, key, allPurchasesByDate, totalPurchased, totalPaid, balance }, i) => (
                   <BuyerLedgerRow
                     key={key}
+                    slNo={i + 1}
                     buyer={buyer}
                     buyerKey={key}
                     sellers={sellers}
@@ -1551,6 +1640,8 @@ export default function BuyerLedger() {
                     onPaymentChange={load}
                     onDeleteBuyer={deleteBuyer}
                     isDuplicateName={nameCounts[buyer.name.trim().toUpperCase()] > 1}
+                  autoOpen={focusKey === key}
+                  onAutoOpened={() => setFocusKey(null)}
                   />
                 ))}
               </tbody>

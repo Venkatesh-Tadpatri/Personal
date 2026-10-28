@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { Search, Eye, X, RefreshCw, History } from 'lucide-react';
 import { getSellers } from '../api';
-import { fmtINR, fmtNum, fmtDate, MATERIAL_BADGE, MATERIALS } from '../utils';
+import { fmtINR, fmtNum, fmtDate, MATERIAL_BADGE } from '../utils';
+import { useMaterials } from '../materials';
 import { BillModal } from './SellerList';
+import { useSort, SortTh } from '../sorting';
 
 const MONTHS = [
   ['01', 'January'], ['02', 'February'], ['03', 'March'], ['04', 'April'],
@@ -12,9 +14,18 @@ const MONTHS = [
 ];
 
 function SellerHistoryModal({ group, onClose, onViewBill }) {
+  const { sort, toggleSort, sortRows } = useSort('date', 'desc');
+  const entries = sortRows(group.entries, {
+    date:     e => e.entry_date,
+    serial:   e => e.serial_number,
+    material: e => (e.material && e.material !== 'GENERAL' ? e.material : ''),
+    bags:     e => Number(e.num_bags) || 0,
+    weight:   e => Number(e.weight) || 0,
+    amount:   e => Number(e.amount) || 0,
+  });
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 760 }} onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 1040, width: '95%' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <div className="modal-title">{group.name}</div>
@@ -29,16 +40,20 @@ function SellerHistoryModal({ group, onClose, onViewBill }) {
           <table>
             <thead>
               <tr>
-                <th>Date</th><th>Serial No</th><th>Material</th>
-                <th>Bags</th><th>Weight(KG)</th><th>Amount(₹)</th>
+                <SortTh col="date" label="Date" sort={sort} onSort={toggleSort} />
+                <SortTh col="serial" label="Serial No" sort={sort} onSort={toggleSort} />
+                <SortTh col="material" label="Material" sort={sort} onSort={toggleSort} />
+                <SortTh col="bags" label="Bags" sort={sort} onSort={toggleSort} />
+                <SortTh col="weight" label="Weight(KG)" sort={sort} onSort={toggleSort} />
+                <SortTh col="amount" label="Amount(₹)" sort={sort} onSort={toggleSort} />
                 <th style={{ textAlign: 'center' }}>Bill</th>
               </tr>
             </thead>
             <tbody>
-              {group.entries.map(e => (
+              {entries.map(e => (
                 <tr key={e.id}>
                   <td className="td-muted" style={{ fontSize: 12 }}>{fmtDate(e.entry_date)}</td>
-                  <td className="td-muted" style={{ fontSize: 11, fontFamily: 'monospace' }}>{e.serial_number}</td>
+                  <td className="td-muted" style={{ fontSize: 11, fontFamily:'var(--font-body)' }}>{e.serial_number}</td>
                   <td>
                     {e.material && e.material !== 'GENERAL'
                       ? <span className={`badge ${MATERIAL_BADGE[e.material] || 'badge-amber'}`}>{e.material}</span>
@@ -65,6 +80,8 @@ function SellerHistoryModal({ group, onClose, onViewBill }) {
 }
 
 export default function SellerHistory() {
+  const { materials: MATERIALS } = useMaterials();
+  const { sort, toggleSort, sortRows } = useSort('name');
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -129,6 +146,15 @@ export default function SellerHistory() {
   }
 
   groups.sort((a, b) => a.name.localeCompare(b.name));
+  const sortedGroups = sortRows(groups, {
+    name:      g => g.name,
+    mobile:    g => g.mobile,
+    visits:    g => g.count,
+    bags:      g => g.totalBags,
+    weight:    g => g.totalWeight,
+    amount:    g => g.totalAmount,
+    lastVisit: g => g.lastVisit,
+  });
 
   const clear = () => { setSearch(''); setFilterYear(''); setFilterMonth(''); setFilterMaterial(''); };
 
@@ -205,15 +231,19 @@ export default function SellerHistory() {
           <table>
             <thead>
               <tr>
-                <th>#</th><th>Seller Name</th><th>Mobile</th>
-                <th style={{ textAlign: 'center' }}>Visits</th>
-                <th>Total Bags</th><th>Total Weight(KG)</th><th>Total Amount(₹)</th>
-                <th>Last Visit</th>
+                <th>#</th>
+                <SortTh col="name" label="Seller Name" sort={sort} onSort={toggleSort} />
+                <SortTh col="mobile" label="Mobile" sort={sort} onSort={toggleSort} />
+                <SortTh col="visits" label="Visits" align="center" sort={sort} onSort={toggleSort} />
+                <SortTh col="bags" label="Total Bags" sort={sort} onSort={toggleSort} />
+                <SortTh col="weight" label="Total Weight(KG)" sort={sort} onSort={toggleSort} />
+                <SortTh col="amount" label="Total Amount(₹)" sort={sort} onSort={toggleSort} />
+                <SortTh col="lastVisit" label="Last Visit" sort={sort} onSort={toggleSort} />
                 <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {groups.map((g, i) => (
+              {sortedGroups.map((g, i) => (
                 <tr key={g.name} style={{ cursor: 'pointer' }} onClick={() => setHistoryFor(g)}>
                   <td className="td-muted" style={{ fontSize: 12 }}>{i + 1}</td>
                   <td style={{ fontWeight: 600 }}>{g.name}</td>
@@ -232,7 +262,7 @@ export default function SellerHistory() {
                   <td>
                     <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }} onClick={e => e.stopPropagation()}>
                       <button className="btn btn-green btn-sm" onClick={() => setHistoryFor(g)} title="View History" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <History size={13} /> View
+                        <History size={13} /> <span className="btn-text">View</span>
                       </button>
                     </div>
                   </td>

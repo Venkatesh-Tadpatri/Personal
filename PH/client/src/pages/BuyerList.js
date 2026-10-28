@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { Search, Eye, Printer, Trash2, Edit2, Check, X, RefreshCw } from 'lucide-react';
+import { Search, Eye, Printer, Trash2, Edit2, Check, X, RefreshCw, ShoppingCart } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { getBuyers, updateBuyer, deleteBuyer as apiDeleteBuyer } from '../api';
-import { fmtINR, fmtNum, fmtDate, MATERIAL_BADGE, MATERIALS, todayISO } from '../utils';
+import { fmtINR, fmtNum, fmtDate, MATERIAL_BADGE, todayISO } from '../utils';
+import { useMaterials } from '../materials';
 import ConfirmDialog from '../ConfirmDialog';
+import { useSort, SortTh } from '../sorting';
 
 const API = axios.create({ baseURL: 'http://127.0.0.1:5000' });
 
@@ -693,7 +696,7 @@ function PurchasesModal({ buyer, filterDate, material, includeExtraCharge = true
                         <tr key={i}>
                           <td style={td({ textAlign:'center', fontWeight:700 })}>{String(i+1).padStart(3,'0')}</td>
                           <td style={td({ textAlign:'left',   fontWeight:700, padding:'4px 5px' })}>{r.seller.material}</td>
-                          <td style={td({ textAlign:'center', fontWeight:600, fontFamily:'monospace' })}>{r.bag.lot || r.seller.lot_number || '—'}</td>
+                          <td style={td({ textAlign:'center', fontWeight:600, fontFamily:'var(--font-body)' })}>{r.bag.lot || r.seller.lot_number || '—'}</td>
                           <td style={td({ textAlign:'center', fontWeight:700 })}>{rowBagCount(r)}</td>
                           <td style={td({ textAlign:'center', fontWeight:800 })}>{Number(r.bag.weight)>0 ? r.bag.weight : '—'}</td>
                           <td style={td({ textAlign:'center', fontWeight:800 })}>{Number(r.bag.rate)>0 ? Number(r.bag.rate).toLocaleString('en-IN') : '—'}</td>
@@ -975,6 +978,8 @@ function EditBuyerModal({ buyer, existingBuyers = [], onClose, onSave }) {
 
 // ─── Main BuyerList ───────────────────────────────────────────
 export default function BuyerList() {
+  const navigate = useNavigate();
+  const { materials: MATERIALS } = useMaterials();
   const [buyers,         setBuyers]       = useState([]);
   const [buyerStats,     setBuyerStats]   = useState({});
   const [statsLoading,   setStatsLoading] = useState(true);
@@ -986,6 +991,7 @@ export default function BuyerList() {
   const [editRate,       setEditRate]     = useState(null);
   const [editBuyer,      setEditBuyer]    = useState(null);
   const [confirm,        setConfirm]      = useState(null);
+  const { sort, toggleSort, sortRows } = useSort('name');
   const [selected,       setSelected]     = useState(new Set());
 
   const load = useCallback(async () => {
@@ -1121,7 +1127,17 @@ export default function BuyerList() {
   // A buyer who purchased more than one material gets one display row per material —
   // each with its own bags/weight/amount/bill — instead of one merged row. Short Name
   // and Name are rendered once (rowSpan) and shared across that buyer's material rows.
-  const displayRows = filtered.flatMap(b => {
+  const sortedBuyers = sortRows(filtered, {
+    short:    b => ((b.lot_number && b.lot_number !== '—') ? b.lot_number : ''),
+    name:     b => b.name,
+    material: b => getLiveStats(b).materials.join(', '),
+    bags:     b => getLiveStats(b).bags,
+    weight:   b => getLiveStats(b).weight,
+    amount:   b => getLiveStats(b).amount,
+    total:    b => getLiveStats(b).amount - Number(b.advance_amount || 0),
+    date:     b => b.entry_date,
+  });
+  const displayRows = sortedBuyers.flatMap(b => {
     const live = getLiveStats(b);
     let mats = live.materials;
     if (filterMaterial) mats = mats.filter(m => m === filterMaterial);
@@ -1130,7 +1146,7 @@ export default function BuyerList() {
     }
     return mats.map((m, i) => ({ buyer: b, material: m, isFirst: i === 0, rowSpan: mats.length }));
   });
-  const buyerIndex = new Map(filtered.map((b, i) => [b.id, i + 1]));
+  const buyerIndex = new Map(sortedBuyers.map((b, i) => [b.id, i + 1]));
 
   const summaryTotals = filtered.reduce((a, b) => {
     const s   = getLiveStats(b);
@@ -1162,6 +1178,9 @@ export default function BuyerList() {
           </div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
+          <button className="btn btn-primary" onClick={() => navigate('/buyer-registration')} title="Go to Buyer Registration">
+            <ShoppingCart size={15} /> Buyer Registration
+          </button>
           {selected.size > 0 && (
             <button
               className="btn btn-sm"
@@ -1267,14 +1286,14 @@ export default function BuyerList() {
                   </div>
                 </th>
                 <th>#</th>
-                <th>Short Name</th>
-                <th>Name</th>
-                <th>Material</th>
-                <th>Bags</th>
-                <th>Weight(kg)</th>
-                <th>Amount(₹)</th>
-                <th>Total(₹)</th>
-                <th>Date</th>
+                <SortTh col="short" label="Short Name" sort={sort} onSort={toggleSort} />
+                <SortTh col="name" label="Name" sort={sort} onSort={toggleSort} />
+                <SortTh col="material" label="Material" sort={sort} onSort={toggleSort} />
+                <SortTh col="bags" label="Bags" sort={sort} onSort={toggleSort} />
+                <SortTh col="weight" label="Weight(kg)" sort={sort} onSort={toggleSort} />
+                <SortTh col="amount" label="Amount(₹)" sort={sort} onSort={toggleSort} />
+                <SortTh col="total" label="Total(₹)" sort={sort} onSort={toggleSort} />
+                <SortTh col="date" label="Date" sort={sort} onSort={toggleSort} />
                 <th style={{ textAlign:'center' }}>Actions</th>
               </tr>
             </thead>
@@ -1306,7 +1325,7 @@ export default function BuyerList() {
                       <td rowSpan={rowSpan} style={{ fontSize:12, color:'var(--text-muted)' }}>{buyerIndex.get(b.id)}</td>
                     )}
                     {isFirst && (
-                      <td rowSpan={rowSpan} style={{ fontSize:12, fontFamily:'monospace', fontWeight:800, color:'#4fa3ff', letterSpacing:'0.5px' }}>
+                      <td rowSpan={rowSpan} style={{ fontSize:12, fontFamily:'var(--font-body)', fontWeight:800, color:'#4fa3ff', letterSpacing:'0.5px' }}>
                         {b.serial_number || '—'}
                       </td>
                     )}
@@ -1338,7 +1357,7 @@ export default function BuyerList() {
                     <td onClick={e => e.stopPropagation()}>
                       <div style={{ display:'flex', gap:5, justifyContent:'center' }}>
                         <button className="btn btn-green btn-sm" onClick={() => setViewPurchases({ buyer: b, material, includeExtraCharge: isFirst })} title="View Bill">
-                          <Eye size={13} /> View
+                          <Eye size={13} /> <span className="btn-text">View</span>
                         </button>
                         <button
                           className="btn btn-sm"

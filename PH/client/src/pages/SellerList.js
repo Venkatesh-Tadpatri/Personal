@@ -124,7 +124,7 @@
 // //                   {bags.map((b, i) => (
 // //                     <tr key={i} style={{ background: i%2===0 ? 'var(--bg-panel)':'transparent', borderBottom:'1px solid var(--border)' }}>
 // //                       <td style={{ padding:'9px 14px', fontWeight:700, color:'var(--accent)' }}>{i+1}</td>
-// //                       <td style={{ padding:'9px 14px', fontFamily:'monospace' }}>{b.lot}</td>
+// //                       <td style={{ padding:'9px 14px', fontFamily:'var(--font-body)' }}>{b.lot}</td>
 // //                       <td style={{ padding:'9px 14px' }}>{b.weight || '—'}</td>
 // //                       <td style={{ padding:'9px 14px', color: b.rate ? 'var(--green)':'var(--text-muted)' }}>{b.rate ? `₹${fmtINR(b.rate)}` : '—'}</td>
 // //                       <td style={{ padding:'9px 14px', fontWeight:700, color:'var(--accent)' }}>{b.amount ? `₹${fmtINR(b.amount)}` : '—'}</td>
@@ -378,7 +378,7 @@
 // //                   </div>
 
 // //                   {/* Lot */}
-// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lotLabel}</div>
+// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lotLabel}</div>
 
 // //                   {/* Weight — pre-filled from registration */}
 // //                   <input
@@ -567,7 +567,7 @@
 // //                 return (
 // //                   <tr key={s.id}>
 // //                     <td className="td-muted" style={{ fontSize:12 }}>{idx+1}</td>
-// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 // //                     <td className="td-muted">{s.mobile && s.mobile!=='0000000000' ? s.mobile : '—'}</td>
 // //                     <td>{s.material && s.material!=='GENERAL'
@@ -575,7 +575,7 @@
 // //                       : <span className="td-muted">—</span>}
 // //                     </td>
 // //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-// //                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+// //                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 // //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 // //                       {s.amount ? `₹${fmtINR(s.amount)}` : (
@@ -885,7 +885,7 @@
 // //                   <tr key={i} style={{ background: i%2===0 ? '#fff':'#eff6ff' }}>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, color:'#111' }}>{b.srno}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 5px', textAlign:'left', fontSize:10, fontWeight:700, color:'#111' }}>{b.material}</td>
-// //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'monospace', color:'#333' }}>{b.lot}</td>
+// //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'var(--font-body)', color:'#333' }}>{b.lot}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:600, color:'#111' }}>1</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#1e40af' }}>{b.weight != null ? b.weight : '—'}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#166534' }}>{b.rate != null ? Number(b.rate).toLocaleString('en-IN') : '—'}</td>
@@ -1084,7 +1084,7 @@
 // //               {rows.map((r,i)=>(
 // //                 <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'9px 13px', background:i%2===0?'var(--bg-card)':'var(--bg-panel)', borderBottom:i<rows.length-1?'1px solid var(--border)':'none', alignItems:'center' }}>
 // //                   <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
-// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lot}</div>
+// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lot}</div>
 
 // //                   {/* Weight */}
 // //                   <input type="number" value={r.weight} onChange={e=>update(i,'weight',e.target.value)}
@@ -1306,7 +1306,7 @@
 // //                 return(
 // //                   <tr key={s.id}>
 // //                     <td className="td-muted" style={{ fontSize:12 }}>{i+1}</td>
-// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 // //                     <td className="td-muted">{s.mobile&&s.mobile!=='0000000000'?s.mobile:'—'}</td>
 // //                     <td>{s.material&&s.material!=='GENERAL'
@@ -1314,7 +1314,7 @@
 // //                       :<span className="td-muted">—</span>}
 // //                     </td>
 // //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-// //                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+// //                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 // //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 // //                       {s.amount?`₹${fmtINR(s.amount)}`:<span style={{ fontSize:11, color:'var(--text-muted)' }}>{rd}/{bags.length} rates</span>}
@@ -1687,7 +1687,7 @@
 // //                     <tr key={i}>
 // //                       <td style={td({ textAlign:'center', fontWeight:700 })}>{b.srno}</td>
 // //                       <td style={td({ textAlign:'left', fontWeight:700, padding:'4px 5px' })}>{b.material}</td>
-// //                       <td style={td({ textAlign:'center', fontWeight:600, fontFamily:'monospace' })}>{b.lot}</td>
+// //                       <td style={td({ textAlign:'center', fontWeight:600, fontFamily:'var(--font-body)' })}>{b.lot}</td>
 // //                       <td style={td({ textAlign:'center', fontWeight:700 })}>1</td>
 // //                       <td style={td({ textAlign:'center', fontWeight:800 })}>{b.weight != null ? b.weight : '—'}</td>
 // //                       <td style={td({ textAlign:'center', fontWeight:800 })}>{b.rate != null ? Number(b.rate).toLocaleString('en-IN') : '—'}</td>
@@ -1883,7 +1883,7 @@
 // //               {rows.map((r,i)=>(
 // //                 <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'9px 13px', background:i%2===0?'var(--bg-card)':'var(--bg-panel)', borderBottom:i<rows.length-1?'1px solid var(--border)':'none', alignItems:'center' }}>
 // //                   <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
-// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lot}</div>
+// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lot}</div>
 // //                   <input type="number" value={r.weight} onChange={e=>update(i,'weight',e.target.value)}
 // //                     placeholder="Enter weight" step="0.01" min="0.01" onWheel={e=>e.target.blur()}
 // //                     style={iStyle(r.weight,'#3b82f6')}
@@ -2226,7 +2226,7 @@
 // //                       />
 // //                     </td>
 // //                     <td className="td-muted" style={{ fontSize:12 }}>{i+1}</td>
-// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 // //                     <td className="td-muted">{s.mobile&&s.mobile!=='0000000000'?s.mobile:'—'}</td>
 // //                     <td>{s.material&&s.material!=='GENERAL'
@@ -2234,7 +2234,7 @@
 // //                       :<span className="td-muted">—</span>}
 // //                     </td>
 // //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-// //                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+// //                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 // //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 // //                       {s.amount?`₹${fmtINR(s.amount)}`:<span style={{ fontSize:11, color:'var(--text-muted)' }}>{rd}/{bags.length} rates</span>}
@@ -2589,7 +2589,7 @@
 // //                   <tr key={i} style={{ background: i%2===0 ? '#fff':'#eff6ff' }}>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, color:'#111' }}>{b.srno}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 5px', textAlign:'left', fontSize:10, fontWeight:700, color:'#111' }}>{b.material}</td>
-// //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'monospace', color:'#333' }}>{b.lot}</td>
+// //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'var(--font-body)', color:'#333' }}>{b.lot}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:600, color:'#111' }}>1</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#1e40af' }}>{b.weight != null ? b.weight : '—'}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#166534' }}>{b.rate != null ? Number(b.rate).toLocaleString('en-IN') : '—'}</td>
@@ -2784,7 +2784,7 @@
 // //               {rows.map((r,i)=>(
 // //                 <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'9px 13px', background:i%2===0?'var(--bg-card)':'var(--bg-panel)', borderBottom:i<rows.length-1?'1px solid var(--border)':'none', alignItems:'center' }}>
 // //                   <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
-// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lot}</div>
+// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lot}</div>
 // //                   <input type="number" value={r.weight} onChange={e=>update(i,'weight',e.target.value)}
 // //                     placeholder="Enter weight" step="0.01" min="0.01" onWheel={e=>e.target.blur()}
 // //                     style={iStyle(r.weight,'#3b82f6')}
@@ -3051,7 +3051,7 @@
 // //                       </div>
 // //                     </td>
 // //                     <td className="td-muted" style={{ fontSize:12 }}>{i+1}</td>
-// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 // //                     <td className="td-muted">{s.mobile&&s.mobile!=='0000000000'?s.mobile:'—'}</td>
 // //                     <td>{s.material&&s.material!=='GENERAL'
@@ -3059,7 +3059,7 @@
 // //                       :<span className="td-muted">—</span>}
 // //                     </td>
 // //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-// //                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+// //                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 // //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 // //                       {s.amount?`₹${fmtINR(s.amount)}`:<span style={{ fontSize:11, color:'var(--text-muted)' }}>{rd}/{bags.length} rates</span>}
@@ -3440,7 +3440,7 @@
 //                   <tr key={i} style={{ background: i%2===0 ? '#fff':'#eff6ff' }}>
 //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, color:'#111' }}>{b.srno}</td>
 //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 5px', textAlign:'left', fontSize:10, fontWeight:700, color:'#111' }}>{b.material}</td>
-//                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'monospace', color:'#333' }}>{b.lot}</td>
+//                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'var(--font-body)', color:'#333' }}>{b.lot}</td>
 //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:600, color:'#111' }}>1</td>
 //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#1e40af' }}>{b.weight != null ? b.weight : '—'}</td>
 //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#166534' }}>{b.rate != null ? Number(b.rate).toLocaleString('en-IN') : '—'}</td>
@@ -3635,7 +3635,7 @@
 //               {rows.map((r,i)=>(
 //                 <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'9px 13px', background:i%2===0?'var(--bg-card)':'var(--bg-panel)', borderBottom:i<rows.length-1?'1px solid var(--border)':'none', alignItems:'center' }}>
 //                   <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
-//                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lot}</div>
+//                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lot}</div>
 //                   <input type="number" value={r.weight} onChange={e=>update(i,'weight',e.target.value)}
 //                     placeholder="Enter weight" step="0.01" min="0.01" onWheel={e=>e.target.blur()}
 //                     style={iStyle(r.weight,'#3b82f6')}
@@ -3900,7 +3900,7 @@
 //                       </div>
 //                     </td>
 //                     <td className="td-muted" style={{ fontSize:12 }}>{i+1}</td>
-//                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+//                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 //                     <td className="td-muted">{s.mobile&&s.mobile!=='0000000000'?s.mobile:'—'}</td>
 //                     <td>{s.material&&s.material!=='GENERAL'
@@ -3908,7 +3908,7 @@
 //                       :<span className="td-muted">—</span>}
 //                     </td>
 //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-//                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+//                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 //                       {s.amount?`₹${fmtINR(s.amount)}`:<span style={{ fontSize:11, color:'var(--text-muted)' }}>{rd}/{bags.length} rates</span>}
@@ -4315,7 +4315,7 @@
 //                     <tr key={i} style={{ background: i%2===0?'#fff':'#eff6ff' }}>
 //                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, color:'#111' }}>{b.srno}</td>
 //                       <td style={{ border:'1px solid #b8cef0', padding:'4px 5px', textAlign:'left', fontSize:10, fontWeight:700, color:'#111' }}>{b.material}</td>
-//                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'monospace', color:'#333' }}>{b.lot}</td>
+//                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'var(--font-body)', color:'#333' }}>{b.lot}</td>
 //                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:600, color:'#111' }}>1</td>
 //                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#1e40af' }}>{b.weight!=null?b.weight:'—'}</td>
 //                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#166534' }}>{b.rate!=null?Number(b.rate).toLocaleString('en-IN'):'—'}</td>
@@ -4510,7 +4510,7 @@
 //               {rows.map((r,i)=>(
 //                 <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'9px 13px', background:i%2===0?'var(--bg-card)':'var(--bg-panel)', borderBottom:i<rows.length-1?'1px solid var(--border)':'none', alignItems:'center' }}>
 //                   <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
-//                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lot}</div>
+//                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lot}</div>
 //                   <input type="number" value={r.weight} onChange={e=>update(i,'weight',e.target.value)}
 //                     placeholder="Enter weight" step="0.01" min="0.01" onWheel={e=>e.target.blur()}
 //                     style={iStyle(r.weight,'#3b82f6')}
@@ -4776,7 +4776,7 @@
 //                       </div>
 //                     </td>
 //                     <td className="td-muted" style={{ fontSize:12 }}>{i+1}</td>
-//                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+//                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 //                     <td className="td-muted">{s.mobile&&s.mobile!=='0000000000'?s.mobile:'—'}</td>
 //                     <td>
@@ -4785,7 +4785,7 @@
 //                         : <span className="td-muted">—</span>}
 //                     </td>
 //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-//                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+//                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 //                       {s.amount
@@ -4972,7 +4972,7 @@
 // //                   {bags.map((b, i) => (
 // //                     <tr key={i} style={{ background: i%2===0 ? 'var(--bg-panel)':'transparent', borderBottom:'1px solid var(--border)' }}>
 // //                       <td style={{ padding:'9px 14px', fontWeight:700, color:'var(--accent)' }}>{i+1}</td>
-// //                       <td style={{ padding:'9px 14px', fontFamily:'monospace' }}>{b.lot}</td>
+// //                       <td style={{ padding:'9px 14px', fontFamily:'var(--font-body)' }}>{b.lot}</td>
 // //                       <td style={{ padding:'9px 14px' }}>{b.weight || '—'}</td>
 // //                       <td style={{ padding:'9px 14px', color: b.rate ? 'var(--green)':'var(--text-muted)' }}>{b.rate ? `₹${fmtINR(b.rate)}` : '—'}</td>
 // //                       <td style={{ padding:'9px 14px', fontWeight:700, color:'var(--accent)' }}>{b.amount ? `₹${fmtINR(b.amount)}` : '—'}</td>
@@ -5226,7 +5226,7 @@
 // //                   </div>
 
 // //                   {/* Lot */}
-// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lotLabel}</div>
+// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lotLabel}</div>
 
 // //                   {/* Weight — pre-filled from registration */}
 // //                   <input
@@ -5415,7 +5415,7 @@
 // //                 return (
 // //                   <tr key={s.id}>
 // //                     <td className="td-muted" style={{ fontSize:12 }}>{idx+1}</td>
-// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 // //                     <td className="td-muted">{s.mobile && s.mobile!=='0000000000' ? s.mobile : '—'}</td>
 // //                     <td>{s.material && s.material!=='GENERAL'
@@ -5423,7 +5423,7 @@
 // //                       : <span className="td-muted">—</span>}
 // //                     </td>
 // //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-// //                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+// //                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 // //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 // //                       {s.amount ? `₹${fmtINR(s.amount)}` : (
@@ -5733,7 +5733,7 @@
 // //                   <tr key={i} style={{ background: i%2===0 ? '#fff':'#eff6ff' }}>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, color:'#111' }}>{b.srno}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 5px', textAlign:'left', fontSize:10, fontWeight:700, color:'#111' }}>{b.material}</td>
-// //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'monospace', color:'#333' }}>{b.lot}</td>
+// //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'var(--font-body)', color:'#333' }}>{b.lot}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:600, color:'#111' }}>1</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#1e40af' }}>{b.weight != null ? b.weight : '—'}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#166534' }}>{b.rate != null ? Number(b.rate).toLocaleString('en-IN') : '—'}</td>
@@ -5932,7 +5932,7 @@
 // //               {rows.map((r,i)=>(
 // //                 <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'9px 13px', background:i%2===0?'var(--bg-card)':'var(--bg-panel)', borderBottom:i<rows.length-1?'1px solid var(--border)':'none', alignItems:'center' }}>
 // //                   <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
-// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lot}</div>
+// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lot}</div>
 
 // //                   {/* Weight */}
 // //                   <input type="number" value={r.weight} onChange={e=>update(i,'weight',e.target.value)}
@@ -6154,7 +6154,7 @@
 // //                 return(
 // //                   <tr key={s.id}>
 // //                     <td className="td-muted" style={{ fontSize:12 }}>{i+1}</td>
-// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 // //                     <td className="td-muted">{s.mobile&&s.mobile!=='0000000000'?s.mobile:'—'}</td>
 // //                     <td>{s.material&&s.material!=='GENERAL'
@@ -6162,7 +6162,7 @@
 // //                       :<span className="td-muted">—</span>}
 // //                     </td>
 // //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-// //                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+// //                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 // //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 // //                       {s.amount?`₹${fmtINR(s.amount)}`:<span style={{ fontSize:11, color:'var(--text-muted)' }}>{rd}/{bags.length} rates</span>}
@@ -6535,7 +6535,7 @@
 // //                     <tr key={i}>
 // //                       <td style={td({ textAlign:'center', fontWeight:700 })}>{b.srno}</td>
 // //                       <td style={td({ textAlign:'left', fontWeight:700, padding:'4px 5px' })}>{b.material}</td>
-// //                       <td style={td({ textAlign:'center', fontWeight:600, fontFamily:'monospace' })}>{b.lot}</td>
+// //                       <td style={td({ textAlign:'center', fontWeight:600, fontFamily:'var(--font-body)' })}>{b.lot}</td>
 // //                       <td style={td({ textAlign:'center', fontWeight:700 })}>1</td>
 // //                       <td style={td({ textAlign:'center', fontWeight:800 })}>{b.weight != null ? b.weight : '—'}</td>
 // //                       <td style={td({ textAlign:'center', fontWeight:800 })}>{b.rate != null ? Number(b.rate).toLocaleString('en-IN') : '—'}</td>
@@ -6731,7 +6731,7 @@
 // //               {rows.map((r,i)=>(
 // //                 <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'9px 13px', background:i%2===0?'var(--bg-card)':'var(--bg-panel)', borderBottom:i<rows.length-1?'1px solid var(--border)':'none', alignItems:'center' }}>
 // //                   <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
-// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lot}</div>
+// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lot}</div>
 // //                   <input type="number" value={r.weight} onChange={e=>update(i,'weight',e.target.value)}
 // //                     placeholder="Enter weight" step="0.01" min="0.01" onWheel={e=>e.target.blur()}
 // //                     style={iStyle(r.weight,'#3b82f6')}
@@ -7074,7 +7074,7 @@
 // //                       />
 // //                     </td>
 // //                     <td className="td-muted" style={{ fontSize:12 }}>{i+1}</td>
-// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 // //                     <td className="td-muted">{s.mobile&&s.mobile!=='0000000000'?s.mobile:'—'}</td>
 // //                     <td>{s.material&&s.material!=='GENERAL'
@@ -7082,7 +7082,7 @@
 // //                       :<span className="td-muted">—</span>}
 // //                     </td>
 // //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-// //                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+// //                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 // //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 // //                       {s.amount?`₹${fmtINR(s.amount)}`:<span style={{ fontSize:11, color:'var(--text-muted)' }}>{rd}/{bags.length} rates</span>}
@@ -7437,7 +7437,7 @@
 // //                   <tr key={i} style={{ background: i%2===0 ? '#fff':'#eff6ff' }}>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, color:'#111' }}>{b.srno}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 5px', textAlign:'left', fontSize:10, fontWeight:700, color:'#111' }}>{b.material}</td>
-// //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'monospace', color:'#333' }}>{b.lot}</td>
+// //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'var(--font-body)', color:'#333' }}>{b.lot}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:600, color:'#111' }}>1</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#1e40af' }}>{b.weight != null ? b.weight : '—'}</td>
 // //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#166534' }}>{b.rate != null ? Number(b.rate).toLocaleString('en-IN') : '—'}</td>
@@ -7632,7 +7632,7 @@
 // //               {rows.map((r,i)=>(
 // //                 <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'9px 13px', background:i%2===0?'var(--bg-card)':'var(--bg-panel)', borderBottom:i<rows.length-1?'1px solid var(--border)':'none', alignItems:'center' }}>
 // //                   <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
-// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lot}</div>
+// //                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lot}</div>
 // //                   <input type="number" value={r.weight} onChange={e=>update(i,'weight',e.target.value)}
 // //                     placeholder="Enter weight" step="0.01" min="0.01" onWheel={e=>e.target.blur()}
 // //                     style={iStyle(r.weight,'#3b82f6')}
@@ -7899,7 +7899,7 @@
 // //                       </div>
 // //                     </td>
 // //                     <td className="td-muted" style={{ fontSize:12 }}>{i+1}</td>
-// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+// //                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 // //                     <td className="td-muted">{s.mobile&&s.mobile!=='0000000000'?s.mobile:'—'}</td>
 // //                     <td>{s.material&&s.material!=='GENERAL'
@@ -7907,7 +7907,7 @@
 // //                       :<span className="td-muted">—</span>}
 // //                     </td>
 // //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-// //                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+// //                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 // //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 // //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 // //                       {s.amount?`₹${fmtINR(s.amount)}`:<span style={{ fontSize:11, color:'var(--text-muted)' }}>{rd}/{bags.length} rates</span>}
@@ -8288,7 +8288,7 @@
 //                   <tr key={i} style={{ background: i%2===0 ? '#fff':'#eff6ff' }}>
 //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, color:'#111' }}>{b.srno}</td>
 //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 5px', textAlign:'left', fontSize:10, fontWeight:700, color:'#111' }}>{b.material}</td>
-//                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'monospace', color:'#333' }}>{b.lot}</td>
+//                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'var(--font-body)', color:'#333' }}>{b.lot}</td>
 //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:600, color:'#111' }}>1</td>
 //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#1e40af' }}>{b.weight != null ? b.weight : '—'}</td>
 //                     <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#166534' }}>{b.rate != null ? Number(b.rate).toLocaleString('en-IN') : '—'}</td>
@@ -8483,7 +8483,7 @@
 //               {rows.map((r,i)=>(
 //                 <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'9px 13px', background:i%2===0?'var(--bg-card)':'var(--bg-panel)', borderBottom:i<rows.length-1?'1px solid var(--border)':'none', alignItems:'center' }}>
 //                   <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
-//                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lot}</div>
+//                   <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lot}</div>
 //                   <input type="number" value={r.weight} onChange={e=>update(i,'weight',e.target.value)}
 //                     placeholder="Enter weight" step="0.01" min="0.01" onWheel={e=>e.target.blur()}
 //                     style={iStyle(r.weight,'#3b82f6')}
@@ -8748,7 +8748,7 @@
 //                       </div>
 //                     </td>
 //                     <td className="td-muted" style={{ fontSize:12 }}>{i+1}</td>
-//                     <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+//                     <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
 //                     <td style={{ fontWeight:600 }}>{s.name}</td>
 //                     <td className="td-muted">{s.mobile&&s.mobile!=='0000000000'?s.mobile:'—'}</td>
 //                     <td>{s.material&&s.material!=='GENERAL'
@@ -8756,7 +8756,7 @@
 //                       :<span className="td-muted">—</span>}
 //                     </td>
 //                     <td style={{ textAlign:'center', fontWeight:600 }}>{s.num_bags}</td>
-//                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{s.lot_number}</td>
+//                     <td style={{ fontFamily:'var(--font-body)', fontSize:12 }}>{s.lot_number}</td>
 //                     <td style={{ fontWeight:600 }}>{fmtNum(s.weight)}</td>
 //                     <td style={{ fontWeight:700, color:'var(--accent)' }}>
 //                       {s.amount?`₹${fmtINR(s.amount)}`:<span style={{ fontSize:11, color:'var(--text-muted)' }}>{rd}/{bags.length} rates</span>}
@@ -8813,9 +8813,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import { Search, Eye, Printer, Trash2, Edit2, X, RefreshCw, Check, Package, CheckSquare } from 'lucide-react';
+import { Search, Eye, Printer, Trash2, Edit2, X, RefreshCw, Check, Package, CheckSquare, RotateCcw, ChevronRight, ChevronDown, UserPlus } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useSort, SortTh } from '../sorting';
 import axios from 'axios';
-import { fmtINR, fmtNum, fmtDate, MATERIAL_BADGE, MATERIALS } from '../utils';
+import { fmtINR, fmtNum, fmtDate, MATERIAL_BADGE, sellerLabourRate, sellerCommission, sellerCommissionPct } from '../utils';
+import { useMaterials } from '../materials';
 import ConfirmDialog from '../ConfirmDialog';
 
 const API = axios.create({ baseURL: 'http://localhost:5000' });
@@ -8863,13 +8866,15 @@ function getGingerGroups(seller) {
       Math.abs(w - cur._perBag) > 0.00001 ||
       cur.rateMode !== rateMode ||
       Number(cur.rate) !== Number(bag.rate) ||
+      (!(Number(bag.rate) > 0) && Math.abs(Number(bag.amount || 0) - cur._perAmt) > 0.00001) ||
       (cur.buyer || '') !== (bag.buyer || '')
     ) {
-      cur = { _perBag: w, _sumW: w, bags: 1, rate: bag.rate, buyer: bag.buyer || '', lot, rateMode };
+      cur = { _perBag: w, _sumW: w, _perAmt: Number(bag.amount || 0), _sumAmt: Number(bag.amount || 0), bags: 1, rate: bag.rate, buyer: bag.buyer || '', lot, rateMode };
       groups.push(cur);
     } else {
       cur.bags++;
       cur._sumW += w;
+      cur._sumAmt += Number(bag.amount || 0);
     }
   });
 
@@ -8878,7 +8883,7 @@ function getGingerGroups(seller) {
     const rt     = Number(g.rate) > 0 ? String(g.rate) : '';
     const amt    = rt
       ? String(Math.round(g.rateMode === 'PER_BAG' ? g.bags * parseFloat(rt) : totalW * parseFloat(rt) / 100))
-      : '';
+      : (g._sumAmt > 0 ? String(Math.round(g._sumAmt)) : ''); // amount typed directly
     return { lot: g.lot, bags: g.bags, weight: totalW > 0 ? String(totalW) : '', rate: rt, amount: amt, buyer: g.buyer, rateMode: g.rateMode };
   });
 }
@@ -9104,9 +9109,9 @@ function buildBillHTML(seller) {
   // const advance     = parseFloat(seller.advance_amount) || 0;
   // const finalPay    = parseFloat((netAmount - advance).toFixed(2));
 
-  const labourRate  = Number(seller.labour_rate || 20);
+  const labourRate  = sellerLabourRate(seller); // 0 is a valid rate
   const labourAmt   = labourRate * labourUnits;
-  const commission  = Math.round(grossAmount * 8 / 100);
+  const commission  = sellerCommission(seller, grossAmount);
   const netAmount   = Math.round(grossAmount - labourAmt - commission);
   const advance     = Math.round(parseFloat(seller.advance_amount) || 0);
   const finalPay    = Math.round(netAmount - advance);
@@ -9145,7 +9150,7 @@ function buildBillHTML(seller) {
   <!-- META ROW -->
   <div style="border:1px solid #93c5fd;border-radius:3px;overflow:hidden;">
     <div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:10.5px;border-bottom:1px solid #cfe2ff;background:#f0f6ff;">
-      <span><strong style="color:#1e40af;">Bill No:</strong> ${seller.serial_number || '—'}</span>
+      <span><strong style="color:#1e40af;">Bill No:</strong> ${seller.bill_no || seller.serial_number || '—'}</span>
       <span><strong style="color:#1e40af;">Date:</strong> ${fmtDate(seller.entry_date)}</span>
     </div>
     <div style="padding:4px 8px;font-size:10.5px;">
@@ -9337,15 +9342,30 @@ ${billsHtml}
 }
 
 // ─── Bulk print all selected sellers ─────────────────────────
-function printMultipleBills(sellers) {
+async function printMultipleBills(sellers) {
+  // Issue bill numbers (Settings → Bill Number) to any seller that doesn't have one yet
+  let numbers = {};
+  try {
+    const res = await API.post('/api/sellers/bill-numbers', { ids: sellers.map(s => s.id) });
+    numbers = res.data.data || {};
+  } catch { /* print with serial numbers if the server can't issue */ }
   const billsHtml = sellers
-    .map(s => `<div class="bill-page">${buildBillHTML(s).html}</div>`)
+    .map(s => `<div class="bill-page">${buildBillHTML({ ...s, bill_no: numbers[s.id] || s.bill_no }).html}</div>`)
     .join('\n');
   openPrintWindow(wrapInPrintPage(billsHtml, `Bills — ${sellers.length} Sellers`));
 }
 
 // ─── Bill Modal ───────────────────────────────────────────────
-export function BillModal({ seller, onClose }) {
+export function BillModal({ seller: sellerProp, onClose }) {
+  // Bill number is issued the first time this seller's bill is opened, then stays the same
+  const [billNo, setBillNo] = useState(sellerProp.bill_no || null);
+  useEffect(() => {
+    if (sellerProp.bill_no) return;
+    API.post('/api/sellers/' + sellerProp.id + '/bill-number')
+      .then(res => setBillNo(res.data.bill_no))
+      .catch(() => {});
+  }, [sellerProp.id, sellerProp.bill_no]);
+  const seller = { ...sellerProp, bill_no: billNo };
 
   const bagRows = getSellerBillRows(seller);
   const totalBags = bagRows.reduce((s, b) => s + (Number(b.bags) || 0), 0);
@@ -9359,9 +9379,9 @@ export function BillModal({ seller, onClose }) {
   // const advance     = parseFloat(seller.advance_amount) || 0;
   // const finalPay    = parseFloat((netAmount - advance).toFixed(2));
 
-  const labourRate  = Number(seller.labour_rate || 20);
+  const labourRate  = sellerLabourRate(seller); // 0 is a valid rate
   const labourAmt   = labourRate * labourUnits;
-  const commission  = Math.round(grossAmount * 8 / 100);
+  const commission  = sellerCommission(seller, grossAmount);
   const netAmount   = Math.round(grossAmount - labourAmt - commission);
   const advance     = Math.round(parseFloat(seller.advance_amount) || 0);
   const finalPay    = Math.round(netAmount - advance);
@@ -9402,7 +9422,7 @@ export function BillModal({ seller, onClose }) {
               </div>
               <div style={{ border:'1px solid #93c5fd', borderRadius:3, marginBottom:8, overflow:'hidden', position:'relative', zIndex:1 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', borderBottom:'1px solid #cfe2ff', padding:'5px 8px', fontSize:11 }}>
-                  <span><strong style={{ color:'#1e40af' }}>Bill No :</strong> {seller.serial_number || '—'}</span>
+                  <span><strong style={{ color:'#1e40af' }}>Bill No :</strong> {seller.bill_no || seller.serial_number || '—'}</span>
                   <span><strong style={{ color:'#1e40af' }}>Date :</strong> {fmtDate(seller.entry_date)}</span>
                 </div>
                 <div style={{ padding:'4px 8px', fontSize:11 }}>
@@ -9422,7 +9442,7 @@ export function BillModal({ seller, onClose }) {
                     <tr key={i} style={{ background: i%2===0?'#fff':'#eff6ff' }}>
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, color:'#111' }}>{b.srno}</td>
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 5px', textAlign:'left', fontSize:10, fontWeight:700, color:'#111' }}>{b.material}</td>
-                      <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'monospace', color:'#333' }}>{b.lot}</td>
+                      <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontFamily:'var(--font-body)', color:'#333' }}>{b.lot}</td>
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:600, color:'#111' }}>{b.bags || 1}</td>
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#1e40af' }}>{b.weight!=null?b.weight:'—'}</td>
                       <td style={{ border:'1px solid #b8cef0', padding:'4px 3px', textAlign:'center', fontSize:10, fontWeight:800, color:'#166534' }}>{b.rate!=null?Number(b.rate).toLocaleString('en-IN'):'—'}</td>
@@ -9477,9 +9497,11 @@ function BuyerSelect({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [rect, setRect] = useState(null);
+  const [active, setActive] = useState(0); // highlighted row for keyboard navigation
   const btnRef = useRef(null);
   const panelRef = useRef(null);
   const inputRef = useRef(null);
+  const listRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -9500,22 +9522,72 @@ function BuyerSelect({ value, onChange, options }) {
     };
   }, [open]);
 
+  const filtered = options.filter(o => o.label.toLowerCase().includes(query.toLowerCase()));
+  // Row 0 clears the buyer; buyers follow
+  const items = [{ value: '', label: '— Select Buyer —', clear: true }, ...filtered];
+
+  // Keep the highlighted row in view while arrowing through a long list
+  useEffect(() => {
+    if (!open) return;
+    listRef.current?.querySelector(`[data-idx="${active}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [active, open]);
+
   const openDropdown = () => {
     setRect(btnRef.current.getBoundingClientRect());
     setQuery('');
+    // Start on the current buyer, or the first buyer when none is chosen yet
+    const current = options.findIndex(o => o.value === value);
+    setActive(current >= 0 ? current + 1 : (options.length ? 1 : 0));
     setOpen(true);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  const filtered = options.filter(o => o.label.toLowerCase().includes(query.toLowerCase()));
+  const close = () => {
+    setOpen(false);
+    btnRef.current?.focus(); // so Tab continues to the next field
+  };
+
+  const choose = (item) => {
+    onChange(item.value);
+    close();
+  };
+
+  const onSearch = (e) => {
+    setQuery(e.target.value);
+    setActive(1); // first match (falls back to row 0 below when nothing matches)
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActive(a => Math.min(a + 1, items.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive(a => Math.max(a - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      choose(items[Math.min(active, items.length - 1)]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation(); // close only the dropdown, not the popup it sits in
+      close();
+    } else if (e.key === 'Tab') {
+      setOpen(false);
+    }
+  };
+
+  const activeIdx = Math.min(active, items.length - 1);
 
   return (
     <div style={{ width: '100%' }}>
       <button type="button" ref={btnRef} onClick={() => (open ? setOpen(false) : openDropdown())}
+        onKeyDown={e => { if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); openDropdown(); } }}
         style={{ background: value ? 'rgba(139,92,246,0.1)' : 'var(--bg-panel)', border: `1px solid ${value ? 'rgba(139,92,246,0.5)' : 'var(--border-light)'}`,
           borderRadius: 7, padding: '8px 10px', color: value ? '#a78bfa' : 'var(--text-muted)', fontFamily: 'var(--font-body)',
           fontSize: 12, fontWeight: 700, outline: 'none', width: '100%', cursor: 'pointer', textAlign: 'left',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}
+        onFocus={e => { e.currentTarget.style.boxShadow = '0 0 0 2px rgba(139,92,246,0.45)'; }}
+        onBlur={e => { e.currentTarget.style.boxShadow = 'none'; }}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value || '— Select Buyer —'}</span>
         <span style={{ fontSize: 9, opacity: 0.7 }}>▾</span>
       </button>
@@ -9526,29 +9598,27 @@ function BuyerSelect({ value, onChange, options }) {
           boxShadow: '0 8px 24px rgba(0,0,0,0.45)', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>
             <Search size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-            <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)}
-              placeholder="Search buyer..."
+            <input ref={inputRef} type="text" value={query} onChange={onSearch} onKeyDown={onKeyDown}
+              placeholder="Search buyer... (↑ ↓ Enter)"
               style={{ background: 'none', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 12, width: '100%' }} />
           </div>
-          <div style={{ maxHeight: 180, overflowY: 'auto' }}>
-            <div onClick={() => { onChange(''); setOpen(false); }}
-              style={{ padding: '7px 10px', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', cursor: 'pointer' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              — Select Buyer —
-            </div>
-            {filtered.length === 0 ? (
+          <div ref={listRef} style={{ maxHeight: 180, overflowY: 'auto' }}>
+            {items.map((b, idx) => {
+              const selected = !b.clear && b.value === value;
+              const highlighted = idx === activeIdx;
+              return (
+                <div key={idx} data-idx={idx} onClick={() => choose(b)} onMouseEnter={() => setActive(idx)}
+                  style={{ padding: '7px 10px', fontSize: 12, fontWeight: b.clear ? 600 : 700, cursor: 'pointer',
+                    color: b.clear ? 'var(--text-muted)' : selected ? '#a78bfa' : 'var(--text-primary)',
+                    background: highlighted ? (selected ? 'rgba(139,92,246,0.2)' : 'var(--bg-hover)') : selected ? 'rgba(139,92,246,0.1)' : 'transparent',
+                    boxShadow: highlighted ? 'inset 3px 0 0 #a78bfa' : 'none' }}>
+                  {b.label}
+                </div>
+              );
+            })}
+            {filtered.length === 0 && (
               <div style={{ padding: '10px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>No match</div>
-            ) : filtered.map((b, idx) => (
-              <div key={idx} onClick={() => { onChange(b.value); setOpen(false); }}
-                style={{ padding: '7px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  color: b.value === value ? '#a78bfa' : 'var(--text-primary)',
-                  background: b.value === value ? 'rgba(139,92,246,0.1)' : 'transparent' }}
-                onMouseEnter={e => e.currentTarget.style.background = b.value === value ? 'rgba(139,92,246,0.15)' : 'var(--bg-hover)'}
-                onMouseLeave={e => e.currentTarget.style.background = b.value === value ? 'rgba(139,92,246,0.1)' : 'transparent'}>
-                {b.label}
-              </div>
-            ))}
+            )}
           </div>
         </div>,
         document.body
@@ -9556,6 +9626,78 @@ function BuyerSelect({ value, onChange, options }) {
     </div>
   );
 }
+
+// ─── Shared bag-line logic (Edit Seller popup + inline bag lines in the list) ───
+// Regular bags: rate is ₹ per 100 kg. Grouped materials (Ginger/Onion): rate per 100 kg or
+// per bag (rateMode). Typing an amount directly clears the rate for that line.
+
+const calcGroupAmount = (row) => {
+  const bagCount = parseInt(row.bags) || 0;
+  const weight = parseFloat(row.weight) || 0;
+  const rate = parseFloat(row.rate) || 0;
+  if (!rate) return row.amount || ''; // no rate → keep directly typed amount
+  if (row.rateMode === 'PER_BAG') return bagCount ? String(Math.round(bagCount * rate)) : '';
+  return weight ? String(Math.round((weight * rate) / 100)) : '';
+};
+
+const applyBagEdit = (r, field, val) => {
+  const next = { ...r, [field]: val };
+  if (field === 'amount') {
+    next.rate = '';
+  } else if (field === 'rate' || (field === 'weight' && parseFloat(r.rate) > 0)) {
+    const w  = parseFloat(field === 'weight' ? val : r.weight) || 0;
+    const rt = parseFloat(field === 'rate'   ? val : r.rate)   || 0;
+    next.amount = w && rt ? String(Math.round((w * rt) / 100)) : '';
+  }
+  return next;
+};
+
+const applyGroupEdit = (r, field, val) => {
+  const next = { ...r, [field]: val };
+  if (field === 'amount') {
+    next.rate = '';
+  } else if (['bags', 'weight', 'rate', 'rateMode'].includes(field)) {
+    next.amount = calcGroupAmount(next);
+  }
+  return next;
+};
+
+// bag_data as stored on the seller — grouped rows are expanded back to one entry per bag
+const buildBagData = (lot, isGrouped, rows) => {
+  if (!isGrouped) {
+    return rows.map(r => ({
+      lot,
+      weight: parseFloat(r.weight) || 0,
+      rate:   parseFloat(r.rate)   || 0,
+      amount: parseFloat(r.amount) || 0,
+      buyer:  r.buyer || '',
+    }));
+  }
+  const bagData = [];
+  rows.forEach(r => {
+    const bagsInGroup  = r.bags || 0;
+    const groupW       = parseFloat(r.weight) || 0;
+    const rate         = parseFloat(r.rate)   || 0;
+    const rateMode     = r.rateMode || 'PER_100KG';
+    const weightPerBag = bagsInGroup > 0 ? groupW / bagsInGroup : 0;
+    const amtPerBag    = rate > 0
+      ? (rateMode === 'PER_BAG' ? rate : weightPerBag * rate / 100)
+      : (bagsInGroup > 0 ? (parseFloat(r.amount) || 0) / bagsInGroup : 0);
+    for (let j = 0; j < bagsInGroup; j++) {
+      bagData.push({ lot, weight: weightPerBag, rate, amount: amtPerBag, buyer: r.buyer || '', rate_mode: rateMode });
+    }
+  });
+  return bagData;
+};
+
+const bagInputStyle = (val, col) => ({
+  background:   val ? col + '11' : 'var(--bg-panel)',
+  border:       '1px solid ' + (val ? col + '66' : 'var(--border-light)'),
+  borderRadius: 7, padding: '8px 11px',
+  color:        val ? col : 'var(--text-muted)',
+  fontFamily:   'var(--font-body)', fontSize: 13, fontWeight: 700,
+  outline: 'none', width: '100%',
+});
 
 // ─── Edit Modal ───────────────────────────────────────────────
 function EditModal({ seller, onClose, onSave }) {
@@ -9569,7 +9711,8 @@ function EditModal({ seller, onClose, onSave }) {
   const [sellerName, setSellerName] = useState(seller.name || '');
   const [nBags,      setNBags]      = useState(String(num));
   const [advance,    setAdvance]    = useState(String(seller.advance_amount || ''));
-  const [labour,     setLabour]     = useState(String(seller.labour_rate || 20));
+  const [labour,     setLabour]     = useState(String(sellerLabourRate(seller)));
+  const commissionPct = sellerCommissionPct(seller); // saved on the seller from the material's settings
   const [saving,     setSaving]     = useState(false);
   const [buyers,     setBuyers]     = useState([]);
 
@@ -9579,14 +9722,7 @@ function EditModal({ seller, onClose, onSave }) {
     }).catch(() => {});
   }, []);
 
-  const calcGingerAmount = (row) => {
-    const bagCount = parseInt(row.bags) || 0;
-    const weight = parseFloat(row.weight) || 0;
-    const rate = parseFloat(row.rate) || 0;
-    if (!rate) return '';
-    if (row.rateMode === 'PER_BAG') return bagCount ? String(Math.round(bagCount * rate)) : '';
-    return weight ? String(Math.round((weight * rate) / 100)) : '';
-  };
+  const calcGingerAmount = calcGroupAmount;
 
   // Redistribute bags across ginger groups given total n
   const redistributeGinger = (groups, n) => {
@@ -9614,28 +9750,12 @@ function EditModal({ seller, onClose, onSave }) {
 
   // Regular bag update
   const update = (i, field, val) => {
-    setRows(prev => prev.map((r, j) => {
-      if (j !== i) return r;
-      const next = { ...r, [field]: val };
-      if (field === 'weight' || field === 'rate') {
-        const w  = parseFloat(field === 'weight' ? val : r.weight) || 0;
-        const rt = parseFloat(field === 'rate'   ? val : r.rate)   || 0;
-        next.amount = w && rt ? String(Math.round((w * rt) / 100)) : '';
-      }
-      return next;
-    }));
+    setRows(prev => prev.map((r, j) => (j === i ? applyBagEdit(r, field, val) : r)));
   };
 
   // Ginger group update
   const updateGinger = (i, field, val) => {
-    setGingerRows(prev => prev.map((r, j) => {
-      if (j !== i) return r;
-      const next = { ...r, [field]: val };
-      if (['bags', 'weight', 'rate', 'rateMode'].includes(field)) {
-        next.amount = calcGingerAmount(next);
-      }
-      return next;
-    }));
+    setGingerRows(prev => prev.map((r, j) => (j === i ? applyGroupEdit(r, field, val) : r)));
   };
 
   const addGingerRow = () => {
@@ -9675,23 +9795,16 @@ function EditModal({ seller, onClose, onSave }) {
     : rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
   const labourUnits = bags;
   const labourAmt   = (parseFloat(labour) || 0) * labourUnits;
-  const commission  = Math.round(grossAmount * 8 / 100);
+  const commission  = Math.round(grossAmount * commissionPct / 100);
   const totalDeduct = labourAmt + commission;
   const netPayable  = Math.round(grossAmount - totalDeduct);
   const finalPay    = Math.round(netPayable - (parseFloat(advance) || 0));
 
   const displayRows = isGroupedMaterial ? gingerRows : rows;
-  const ratesDone   = displayRows.filter(r => parseFloat(r.rate)   > 0).length;
+  const ratesDone   = displayRows.filter(r => parseFloat(r.rate) > 0 || parseFloat(r.amount) > 0).length;
   const wtsDone     = displayRows.filter(r => parseFloat(r.weight) > 0).length;
 
-  const iStyle = (val, col) => ({
-    background:   val ? col + '11' : 'var(--bg-panel)',
-    border:       '1px solid ' + (val ? col + '66' : 'var(--border-light)'),
-    borderRadius: 7, padding: '8px 11px',
-    color:        val ? col : 'var(--text-muted)',
-    fontFamily:   'var(--font-body)', fontSize: 13, fontWeight: 700,
-    outline: 'none', width: '100%',
-  });
+  const iStyle = bagInputStyle;
 
   const buyerOptions = buyers.map(b => {
     const display = (b.lot_number && b.lot_number !== '—') ? b.lot_number : b.name;
@@ -9706,32 +9819,7 @@ function EditModal({ seller, onClose, onSave }) {
     }
     setSaving(true);
     try {
-      let bag_data;
-      if (isGroupedMaterial) {
-        // Expand each group to individual bag entries
-        bag_data = [];
-        gingerRows.forEach(r => {
-          const bagsInGroup  = r.bags || 0;
-          const groupW       = parseFloat(r.weight) || 0;
-          const rate         = parseFloat(r.rate)   || 0;
-          const rateMode     = r.rateMode || 'PER_100KG';
-          const weightPerBag = bagsInGroup > 0 ? groupW / bagsInGroup : 0;
-          const amtPerBag    = rate > 0
-            ? (rateMode === 'PER_BAG' ? rate : weightPerBag * rate / 100)
-            : 0;
-          for (let j = 0; j < bagsInGroup; j++) {
-            bag_data.push({ lot, weight: weightPerBag, rate, amount: amtPerBag, buyer: r.buyer || '', rate_mode: rateMode });
-          }
-        });
-      } else {
-        bag_data = rows.map(r => ({
-          lot,
-          weight: parseFloat(r.weight) || 0,
-          rate:   parseFloat(r.rate)   || 0,
-          amount: parseFloat(r.amount) || 0,
-          buyer:  r.buyer || '',
-        }));
-      }
+      const bag_data = buildBagData(lot, isGroupedMaterial, isGroupedMaterial ? gingerRows : rows);
 
       await API.put('/api/sellers/' + seller.id, {
         name:           sellerName.trim() || seller.name,
@@ -9753,11 +9841,15 @@ function EditModal({ seller, onClose, onSave }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth:960, width:'95%' }} onClick={e=>e.stopPropagation()}>
-        <div className="modal-header">
+      <div className="modal" style={{ maxWidth:960, width:'95%', display:'flex', flexDirection:'column', overflow:'hidden' }} onClick={e=>e.stopPropagation()}>
+        {/* Fixed header */}
+        <div className="modal-header" style={{ flexShrink:0, marginBottom:16 }}>
           <div className="modal-title">✏️ Edit Seller — {sellerName || seller.name}</div>
           <button className="modal-close" onClick={onClose}><X size={20}/></button>
         </div>
+
+        {/* Scrollable body */}
+        <div style={{ flex:1, minHeight:0, overflowY:'auto', margin:'0 -12px', padding:'0 12px' }}>
 
         <div style={{ display:'flex', gap:10, marginBottom:18, flexWrap:'wrap' }}>
           {[['Serial No',seller.serial_number],['Lot No',lot],
@@ -9771,7 +9863,7 @@ function EditModal({ seller, onClose, onSave }) {
           ))}
         </div>
 
-        <div style={{ display:'grid', gridTemplateColumns:'1.5fr 1fr 1fr 1fr', gap:14, marginBottom:18 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:14, marginBottom:18 }}>
           <div className="form-group">
             <label className="form-label">Seller Name</label>
             <input className="form-input" type="text" value={sellerName} onChange={e=>setSellerName(e.target.value)} placeholder="Seller name" style={{ textTransform:'uppercase' }}/>
@@ -9853,9 +9945,12 @@ function EditModal({ seller, onClose, onSave }) {
                     {/* Buyer */}
                     <BuyerSelect value={r.buyer||''} onChange={val=>updateGinger(i,'buyer',val)} options={buyerOptions} />
                     {/* Amount */}
-                    <div style={{ fontSize:13, fontWeight:800, color:r.amount?'var(--accent)':'var(--text-muted)', textAlign:'right' }}>
-                      {r.amount?'₹'+fmtINR(r.amount):'—'}
-                    </div>
+                    <input type="number" value={r.amount} onChange={e=>updateGinger(i,'amount',e.target.value)}
+                      placeholder="₹ amount" step="1" min="0" onWheel={e=>e.target.blur()}
+                      style={{ ...iStyle(r.amount,'#f59e0b'), textAlign:'right' }}
+                      onFocus={e=>{e.target.style.borderColor='#f59e0b';e.target.style.boxShadow='0 0 0 2px rgba(245,158,11,0.2)'}}
+                      onBlur={e=>{e.target.style.borderColor=r.amount?'#f59e0b66':'var(--border-light)';e.target.style.boxShadow='none'}}
+                    />
                     {/* Remove */}
                     {gingerRows.length > 1
                       ? <button type="button" onClick={()=>removeGingerRow(i)} style={{ width:24, height:24, borderRadius:5, border:'1px solid rgba(239,68,68,0.4)', background:'var(--red-dim)', color:'var(--red)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700, flexShrink:0 }}>×</button>
@@ -9903,7 +9998,7 @@ function EditModal({ seller, onClose, onSave }) {
                     {wtsDone}/{rows.length} weights
                   </span>
                 </div>
-                <span style={{ fontSize:11, color:'var(--text-muted)' }}>Rate per <strong style={{ color:'var(--text-primary)' }}>100 kg</strong></span>
+                <span style={{ fontSize:11, color:'var(--text-muted)' }}>Rate per <strong style={{ color:'var(--text-primary)' }}>100 kg</strong> — or type the <strong style={{ color:'var(--text-primary)' }}>Amount</strong> directly</span>
               </div>
 
               <div style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'7px 13px', background:'var(--bg-panel)', borderRadius:'8px 8px 0 0', border:'1px solid var(--border)', borderBottom:'none' }}>
@@ -9916,7 +10011,7 @@ function EditModal({ seller, onClose, onSave }) {
                 {rows.map((r,i)=>(
                   <div key={i} style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'9px 13px', background:i%2===0?'var(--bg-card)':'var(--bg-panel)', borderBottom:i<rows.length-1?'1px solid var(--border)':'none', alignItems:'center' }}>
                     <div style={{ width:24, height:24, borderRadius:5, background:'var(--accent-dim)', color:'var(--accent)', fontWeight:800, fontSize:11, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(245,158,11,0.3)' }}>{i+1}</div>
-                    <div style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color:'var(--text-secondary)' }}>{lot}</div>
+                    <div style={{ fontSize:12, fontWeight:700, fontFamily:'var(--font-body)', color:'var(--text-secondary)' }}>{lot}</div>
                     <input type="number" value={r.weight} onChange={e=>update(i,'weight',e.target.value)}
                       placeholder="Enter weight" step="0.01" min="0.01" onWheel={e=>e.target.blur()}
                       style={iStyle(r.weight,'#3b82f6')}
@@ -9930,9 +10025,12 @@ function EditModal({ seller, onClose, onSave }) {
                       onBlur={e=>{e.target.style.borderColor=r.rate?'#10b98166':'var(--border-light)';e.target.style.boxShadow='none'}}
                     />
                     <BuyerSelect value={r.buyer||''} onChange={val=>update(i,'buyer',val)} options={buyerOptions} />
-                    <div style={{ fontSize:13, fontWeight:800, color:r.amount?'var(--accent)':'var(--text-muted)', textAlign:'right' }}>
-                      {r.amount?'₹'+fmtINR(r.amount):'—'}
-                    </div>
+                    <input type="number" value={r.amount} onChange={e=>update(i,'amount',e.target.value)}
+                      placeholder="₹ amount" step="1" min="0" onWheel={e=>e.target.blur()}
+                      style={{ ...iStyle(r.amount,'#f59e0b'), textAlign:'right' }}
+                      onFocus={e=>{e.target.style.borderColor='#f59e0b';e.target.style.boxShadow='0 0 0 2px rgba(245,158,11,0.2)'}}
+                      onBlur={e=>{e.target.style.borderColor=r.amount?'#f59e0b66':'var(--border-light)';e.target.style.boxShadow='none'}}
+                    />
                   </div>
                 ))}
               </div>
@@ -9940,7 +10038,7 @@ function EditModal({ seller, onClose, onSave }) {
               <div style={{ display:'grid', gridTemplateColumns:'32px 65px 1fr 1fr 160px 120px', gap:8, padding:'10px 13px', marginTop:8, background:'var(--bg-panel)', border:'1px solid var(--border)', borderRadius:8, alignItems:'center' }}>
                 <div/><div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>TOTAL</div>
                 <div style={{ fontSize:14, fontWeight:800, color:'var(--blue)' }}>{totalW.toFixed(2)} kg</div>
-                <div style={{ fontSize:12, color:ratesDone===rows.length?'var(--green)':'var(--text-muted)' }}>{ratesDone}/{rows.length} rates {ratesDone===rows.length?'✓':''}</div>
+                <div style={{ fontSize:12, color:ratesDone===rows.length?'var(--green)':'var(--text-muted)' }}>{ratesDone}/{rows.length} priced {ratesDone===rows.length?'✓':''}</div>
                 <div style={{ fontSize:11, color:'var(--text-muted)' }}>{rows.filter(r=>r.buyer).length}/{rows.length} buyers assigned</div>
                 <div style={{ fontSize:14, fontWeight:800, color:'var(--accent)', textAlign:'right' }}>{grossAmount>0?'₹'+fmtINR(grossAmount):'—'}</div>
               </div>
@@ -9956,8 +10054,8 @@ function EditModal({ seller, onClose, onSave }) {
             <div>
               {[
                 { label:'Gross Amount',           sub: isGroupedMaterial ? `${gingerRows.length} group${gingerRows.length>1?'s':''} · ${bags} bags` : `${rows.length} bags × Rate`, val:`₹ ${fmtINR(grossAmount)}`,               color:'var(--accent)',         fs:16 },
-                { label:'− Labour / Hamali',      sub:`₹${labour||20} × ${bags} bags`,                                                                                    val:`− ₹ ${fmtINR(labourAmt)}`,              color:'var(--red)',            fs:15 },
-                { label:'− Other Charges',        sub:`8% of ₹${fmtINR(grossAmount)}`,                                                                                    val:`− ₹ ${fmtINR(commission)}`,             color:'var(--red)',            fs:15 },
+                { label:'− Labour / Hamali',      sub:`₹${parseFloat(labour)||0} × ${bags} bags`,                                                                                    val:`− ₹ ${fmtINR(labourAmt)}`,              color:'var(--red)',            fs:15 },
+                { label:'− Other Charges',        sub:`${commissionPct}% of ₹${fmtINR(grossAmount)}`,                                                                                    val:`− ₹ ${fmtINR(commission)}`,             color:'var(--red)',            fs:15 },
                 { label:'Net Amount',             sub:'Gross − Labour − Commission',                                                                                       val:`₹ ${fmtINR(netPayable)}`,               color:'var(--blue)',           fs:16, highlight:true },
                 { label:'− Advance Already Paid', sub:'',                                                                                                                  val:`− ₹ ${fmtINR(parseFloat(advance)||0)}`, color:'var(--text-secondary)', fs:15 },
               ].map((row,i)=>(
@@ -9966,7 +10064,7 @@ function EditModal({ seller, onClose, onSave }) {
                     <div style={{ fontSize:13, fontWeight:600, color:row.color }}>{row.label}</div>
                     {row.sub && !(usesGroupLabour(seller.material) && row.label.includes('Labour')) && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{row.sub}</div>}
                   </div>
-                  <div style={{ fontSize:row.fs, fontWeight:800, color:row.color, fontFamily:'var(--font-display)' }}>{row.val}</div>
+                  <div style={{ fontSize:row.fs, fontWeight:700, color:row.color, fontFamily:'var(--font-body)' }}>{row.val}</div>
                 </div>
               ))}
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'16px 18px', background:finalPay>=0?'var(--green-dim)':'var(--red-dim)' }}>
@@ -9976,7 +10074,7 @@ function EditModal({ seller, onClose, onSave }) {
                   </div>
                   <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>Net − Advance</div>
                 </div>
-                <div style={{ fontSize:24, fontWeight:900, color:finalPay>=0?'var(--green)':'var(--red)', fontFamily:'var(--font-display)' }}>
+                <div style={{ fontSize:22, fontWeight:700, color:finalPay>=0?'var(--green)':'var(--red)', fontFamily:'var(--font-body)' }}>
                   ₹ {fmtINR(Math.abs(finalPay))}
                 </div>
               </div>
@@ -9984,11 +10082,109 @@ function EditModal({ seller, onClose, onSave }) {
           </div>
         )}
 
-        <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
+        </div>
+
+        {/* Fixed footer */}
+        <div style={{ display:'flex', gap:10, marginTop:16, paddingTop:16, borderTop:'1px solid var(--border)', justifyContent:'flex-end', flexShrink:0 }}>
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={save} disabled={saving}>
             <Check size={15}/> {saving?'Saving...':'Save Changes'}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Inline bag lines (expanded under a seller row in the list) ────────────────
+// Quick entry of rate / amount / buyer per bag without opening Edit Seller.
+// Bags and weights stay as registered — change those in the Edit Seller popup.
+function BagLines({ seller, buyerOptions, onSaved }) {
+  const num = parseInt(seller.num_bags) || 0;
+  const lot = seller.lot_number || (seller.serial_number + '/' + num);
+  const isGrouped = isGroupedSellerMaterial(seller.material);
+  const initialRows = () => (isGrouped ? getGingerGroups(seller) : getBags(seller));
+  const [rows, setRows] = useState(initialRows);
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const edit = (i, field, val) => {
+    setRows(prev => prev.map((r, j) => (j !== i ? r : (isGrouped ? applyGroupEdit : applyBagEdit)(r, field, val))));
+    setDirty(true);
+  };
+
+  const totalW      = rows.reduce((s, r) => s + (parseFloat(r.weight) || 0), 0);
+  const grossAmount = rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+  const priced      = rows.filter(r => parseFloat(r.rate) > 0 || parseFloat(r.amount) > 0).length;
+  const buyersSet   = rows.filter(r => r.buyer).length;
+
+  const save = async () => {
+    if (rows.some(r => !(parseFloat(r.weight) > 0))) {
+      toast.error('Some bags have no weight — enter weights in Edit Seller first');
+      return;
+    }
+    setSaving(true);
+    try {
+      // Same totals as the Edit Seller popup, using the seller's saved labour and commission rates
+      const netPayable = Math.round(grossAmount - sellerLabourRate(seller) * num - sellerCommission(seller, grossAmount));
+      await API.put('/api/sellers/' + seller.id, {
+        amount:     netPayable,
+        rate_fixed: totalW > 0 && grossAmount > 0 ? Math.round(grossAmount / totalW * 100) : 0,
+        bag_data:   JSON.stringify(buildBagData(lot, isGrouped, rows)),
+      });
+      toast.success(`${seller.name} saved — gross ₹${fmtINR(grossAmount)}`);
+      setDirty(false);
+      onSaved();
+    } catch (err) {
+      toast.error(err.response?.data?.error || err.message || 'Failed to save');
+    } finally { setSaving(false); }
+  };
+
+  const reset = () => { setRows(initialRows()); setDirty(false); };
+
+  const cols = isGrouped ? '32px 65px 70px 1fr 1fr 170px 130px' : '32px 65px 1fr 1fr 170px 130px';
+  const headers = isGrouped
+    ? ['#', 'Lot', 'Bags', 'Weight (kg)', 'Rate (₹)', 'Buyer', 'Amount (₹)']
+    : ['#', 'Lot', 'Weight (kg)', 'Rate (₹/100kg)', 'Buyer', 'Amount (₹)'];
+  const readOnlyS = { fontSize: 13, fontWeight: 700, color: 'var(--blue)', padding: '8px 11px', background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 7 };
+
+  return (
+    <div style={{ padding: '4px 4px 6px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 8, padding: '7px 13px', background: 'var(--bg-panel)', borderRadius: '8px 8px 0 0', border: '1px solid var(--border)', borderBottom: 'none' }}>
+        {headers.map(h => (
+          <div key={h} style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.1, textTransform: 'uppercase', color: 'var(--text-muted)' }}>{h}</div>
+        ))}
+      </div>
+      <div style={{ border: '1px solid var(--border)', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
+        {rows.length === 0 && (
+          <div style={{ padding: 16, fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>No bags recorded — add them in Edit Seller.</div>
+        )}
+        {rows.map((r, i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: cols, gap: 8, padding: '8px 13px', alignItems: 'center',
+            background: i % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-panel)', borderBottom: i < rows.length - 1 ? '1px solid var(--border)' : 'none' }}>
+            <div style={{ width: 24, height: 24, borderRadius: 5, background: 'var(--accent-dim)', color: 'var(--accent)', fontWeight: 800, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(245,158,11,0.3)' }}>{i + 1}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>{lot}</div>
+            {isGrouped && <div style={{ ...readOnlyS, color: 'var(--text-primary)', textAlign: 'center' }}>{r.bags}</div>}
+            <div style={readOnlyS}>{r.weight ? fmtNum(r.weight) : '—'}</div>
+            <input type="number" value={r.rate} onChange={e => edit(i, 'rate', e.target.value)}
+              placeholder={isGrouped ? (r.rateMode === 'PER_BAG' ? 'fixed / bag' : 'e.g. 3200 /100kg') : 'e.g. 3200'}
+              step="0.01" min="0" onWheel={e => e.target.blur()} style={bagInputStyle(r.rate, '#10b981')} />
+            <BuyerSelect value={r.buyer || ''} onChange={val => edit(i, 'buyer', val)} options={buyerOptions} />
+            <input type="number" value={r.amount} onChange={e => edit(i, 'amount', e.target.value)}
+              placeholder="₹ amount" step="1" min="0" onWheel={e => e.target.blur()}
+              style={{ ...bagInputStyle(r.amount, '#f59e0b'), textAlign: 'right' }} />
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginTop: 8, padding: '8px 13px', background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--blue)' }}>{totalW.toFixed(2)} kg</span>
+        <span style={{ fontSize: 12, color: priced === rows.length && rows.length ? 'var(--green)' : 'var(--text-muted)' }}>{priced}/{rows.length} priced</span>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{buyersSet}/{rows.length} buyers assigned</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)' }}>Gross {grossAmount > 0 ? '₹' + fmtINR(grossAmount) : '—'}</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary btn-sm" onClick={reset} disabled={!dirty || saving}><RotateCcw size={13} /> Reset</button>
+          <button className="btn btn-primary btn-sm" onClick={save} disabled={!dirty || saving}><Check size={13} /> {saving ? 'Saving...' : 'Save'}</button>
         </div>
       </div>
     </div>
@@ -10004,6 +10200,8 @@ const cbStyle = (checked) => ({
 
 // ─── Main ─────────────────────────────────────────────────────
 export default function SellerList() {
+  const navigate = useNavigate();
+  const { materials: MATERIALS } = useMaterials();
   const [sellers,  setSellers]  = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState('');
@@ -10013,6 +10211,22 @@ export default function SellerList() {
   const [editing,  setEditing]  = useState(null);
   const [confirm,  setConfirm]  = useState(null);
   const [selected, setSelected] = useState(new Set());
+  const [expanded, setExpanded] = useState(() => new Set()); // seller ids showing inline bag lines
+  const [buyers,   setBuyers]   = useState([]);
+  const { sort, toggleSort, sortRows } = useSort('serial');
+
+  useEffect(() => {
+    API.get('/api/buyers').then(res => setBuyers(res.data.data || [])).catch(() => {});
+  }, []);
+  const buyerOptions = buyers.map(b => {
+    const display = (b.lot_number && b.lot_number !== '—') ? b.lot_number : b.name;
+    return { value: display, label: display };
+  });
+  const toggleExpanded = (id) => setExpanded(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -10029,6 +10243,25 @@ export default function SellerList() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Opened from the header search: show that seller's date, expand their bag lines, scroll to them
+  const location = useLocation();
+  const [focusId, setFocusId] = useState(null);
+  useEffect(() => {
+    const f = location.state?.focusSeller;
+    if (!f) return;
+    setSearch(''); setFMat('');
+    setFDate(f.date || '');
+    setExpanded(new Set([f.id]));
+    setFocusId(f.id);
+  }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!focusId || loading) return;
+    const row = document.getElementById('seller-row-' + focusId);
+    if (!row) return; // that date's sellers not rendered yet — runs again when they arrive
+    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    setFocusId(null);
+  }, [focusId, loading, sellers]);
+
   const del = (id, name) => setConfirm({
     title: 'Delete Seller?',
     message: `"${name}" will be permanently removed.`,
@@ -10044,6 +10277,18 @@ export default function SellerList() {
     const q = search.toLowerCase();
     return (!q || [s.name,s.mobile,s.lot_number,s.serial_number,s.material].some(v=>v?.toLowerCase().includes(q)))
       && (!fMat || s.material===fMat);
+  });
+  // Column sort (also the order used by Print Selected)
+  const sortedList = sortRows(list, {
+    serial:   s => s.serial_number,
+    bill:     s => s.bill_no,
+    name:     s => s.name,
+    material: s => (s.material && s.material !== 'GENERAL' ? s.material : ''),
+    bags:     s => parseInt(s.num_bags) || 0,
+    weight:   s => Number(s.weight) || 0,
+    amount:   s => Number(s.amount) || 0,
+    total:    s => (s.amount ? (s.amount || 0) - (s.advance_amount || 0) : null),
+    date:     s => s.entry_date,
   });
 
   const allIds       = list.map(s => s.id);
@@ -10064,9 +10309,9 @@ export default function SellerList() {
   };
 
   const printSelected = () => {
-    const toprint = list.filter(s => selected.has(s.id));
+    const toprint = sortedList.filter(s => selected.has(s.id));
     if (toprint.length === 0) { toast.error('Select at least one seller'); return; }
-    printMultipleBills(toprint);
+    printMultipleBills(toprint).then(load); // refresh so newly issued bill numbers show in the list
   };
 
   const tot = list.reduce((a,s)=>({
@@ -10084,6 +10329,9 @@ export default function SellerList() {
           </div>
         </div>
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          <button className="btn btn-primary" onClick={() => navigate('/seller-registration')} title="Go to Seller Registration">
+            <UserPlus size={15} /> Seller Registration
+          </button>
           {selectedCount > 0 && (
             <button
               className="btn btn-primary"
@@ -10157,26 +10405,42 @@ export default function SellerList() {
                     {(allSelected||someSelected) && <Check size={11} color="#fff" strokeWidth={3}/>}
                   </div>
                 </th>
-                <th>#</th><th>Serial Number</th><th>Name</th><th>Material</th>
-                <th>Bags</th><th>Weight(KG)</th><th>Amount(₹)</th><th>Total(₹)</th><th>Date</th>
+                <th>#</th>
+                <SortTh col="serial" label="Serial Number" sort={sort} onSort={toggleSort} />
+                <SortTh col="bill" label="Bill No" sort={sort} onSort={toggleSort} />
+                <SortTh col="name" label="Name" sort={sort} onSort={toggleSort} />
+                <SortTh col="material" label="Material" sort={sort} onSort={toggleSort} />
+                <SortTh col="bags" label="Bags" sort={sort} onSort={toggleSort} />
+                <SortTh col="weight" label="Weight(KG)" sort={sort} onSort={toggleSort} />
+                <SortTh col="amount" label="Amount(₹)" sort={sort} onSort={toggleSort} />
+                <SortTh col="total" label="Total(₹)" sort={sort} onSort={toggleSort} />
+                <SortTh col="date" label="Date" sort={sort} onSort={toggleSort} />
                 <th style={{ textAlign:'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {list.map((s,i)=>{
+              {sortedList.map((s,i)=>{
                 const bal = (s.amount||0) - (s.advance_amount||0);
                 const isChecked = selected.has(s.id);
                 let bags = []; try { bags = JSON.parse(s.bag_data||'[]'); } catch {}
-                const rd = bags.filter(b=>Number(b.rate)>0).length;
+                const rd = bags.filter(b=>Number(b.rate)>0||Number(b.amount)>0).length;
+                const isOpen = expanded.has(s.id);
                 return (
-                  <tr key={s.id} style={{ background:isChecked?'rgba(26,86,219,0.06)':undefined, cursor:'pointer' }} onClick={() => setEditing(s)}>
+                  <React.Fragment key={s.id}>
+                  <tr id={'seller-row-' + s.id} style={{ background:isChecked?'rgba(26,86,219,0.06)':isOpen?'var(--bg-hover)':undefined, cursor:'pointer' }}
+                    onClick={() => toggleExpanded(s.id)} title={isOpen ? 'Hide bags' : 'Show bags — enter rate & buyer'}>
                     <td style={{ textAlign:'center', padding:'10px 8px' }}>
                       <div onClick={e=>{ e.stopPropagation(); toggleOne(s.id); }} style={{ ...cbStyle(isChecked), margin:'0 auto' }}>
                         {isChecked && <Check size={11} color="#fff" strokeWidth={3}/>}
                       </div>
                     </td>
-                    <td className="td-muted" style={{ fontSize:12 }}>{i+1}</td>
-                    <td className="td-muted" style={{ fontSize:11, fontFamily:'monospace' }}>{s.serial_number}</td>
+                    <td className="td-muted" style={{ fontSize:12 }}>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}>
+                        {isOpen ? <ChevronDown size={14} style={{ color:'var(--accent)' }}/> : <ChevronRight size={14}/>}{i+1}
+                      </span>
+                    </td>
+                    <td className="td-muted" style={{ fontSize:11, fontFamily:'var(--font-body)' }}>{s.serial_number}</td>
+                    <td style={{ fontSize:12, fontWeight:600, color: s.bill_no ? 'var(--text-primary)' : 'var(--text-muted)' }} title={s.bill_no ? 'Bill issued' : 'Issued when the bill is first opened or printed'}>{s.bill_no || '—'}</td>
                     <td style={{ fontWeight:600 }}>{s.name||'—'}</td>
                     <td>
                       {s.material&&s.material!=='GENERAL'
@@ -10196,20 +10460,29 @@ export default function SellerList() {
                     <td className="td-muted" style={{ fontSize:12 }}>{fmtDate(s.entry_date)}</td>
                     <td>
                       <div style={{ display:'flex', gap:5, justifyContent:'center' }} onClick={e=>e.stopPropagation()}>
-                        <button className="btn btn-green btn-sm" onClick={()=>setBill(s)} title="View Bill" style={{ display:'flex', alignItems:'center', gap:4 }}><Eye size={13}/> View</button>
+                        <button className="btn btn-green btn-sm" onClick={()=>setBill(s)} title="View Bill" style={{ display:'flex', alignItems:'center', gap:4 }}><Eye size={13}/> <span className="btn-text">View</span></button>
                         <button className="btn btn-sm" style={{ background:'var(--accent-dim)', color:'var(--accent)', border:'1px solid rgba(245,158,11,0.3)' }} onClick={()=>setBill(s)} title="Print"><Printer size={13}/></button>
                         <button className="btn btn-blue btn-sm" onClick={()=>setEditing(s)} title="Edit"><Edit2 size={13}/></button>
                         <button className="btn btn-red btn-sm" onClick={()=>del(s.id,s.name)} title="Delete"><Trash2 size={13}/></button>
                       </div>
                     </td>
                   </tr>
+                  {isOpen && (
+                    <tr className="bag-lines-row">
+                      <td colSpan={12} style={{ padding:'6px 14px 12px', whiteSpace:'normal', background:'var(--bg-deep)' }}>
+                        {/* keyed on bag_data so it refreshes after the popup or a save changes this seller */}
+                        <BagLines key={s.bag_data || ''} seller={s} buyerOptions={buyerOptions} onSaved={load} />
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 );
               })}
             </tbody>
             {list.length > 1 && (
               <tfoot>
                 <tr style={{ background:'var(--bg-panel)', borderTop:'2px solid var(--border)' }}>
-                  <td colSpan={5} style={{ padding:'11px 15px', fontWeight:700, color:'var(--text-secondary)', fontSize:12 }}>TOTALS ({list.length})</td>
+                  <td colSpan={6} style={{ padding:'11px 15px', fontWeight:700, color:'var(--text-secondary)', fontSize:12 }}>TOTALS ({list.length})</td>
                   <td style={{ padding:'11px 15px', fontWeight:800 }}>{tot.bags}</td>
                   <td style={{ padding:'11px 15px', fontWeight:800 }}>{fmtNum(tot.wt)}</td>
                   <td style={{ padding:'11px 15px', fontWeight:800, color:'var(--blue)' }}>₹{fmtINR(tot.amt)}</td>
@@ -10222,7 +10495,7 @@ export default function SellerList() {
         )}
       </div>
 
-      {bill    && <BillModal  seller={bill}    onClose={()=>setBill(null)}/>}
+      {bill    && <BillModal  seller={bill}    onClose={()=>{ setBill(null); if (!bill.bill_no) load(); }}/>}
       {editing && <EditModal  seller={editing} onClose={()=>setEditing(null)} onSave={load}/>}
       {confirm && <ConfirmDialog {...confirm}  onClose={()=>setConfirm(null)}/>}
     </div>

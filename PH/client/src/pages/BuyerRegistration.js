@@ -175,7 +175,8 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Save, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
 import axios from 'axios';
-import { todayISO, toUpper, MATERIALS } from '../utils';
+import { todayISO, toUpper } from '../utils';
+import { useMaterials } from '../materials';
 
 const API = axios.create({ baseURL: 'http://127.0.0.1:5000' });
 
@@ -204,6 +205,7 @@ function Field({ label, required, error, children }) {
 }
 
 export default function BuyerRegistration() {
+  const { materials: MATERIALS } = useMaterials();
   const [form,      setForm]      = useState(emptyForm());
   const [loading,   setLoading]   = useState(false);
   const [lastSaved, setLastSaved] = useState(null);

@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { RefreshCw, Plus, Edit2, Trash2, Check, X, Eye, RotateCcw } from 'lucide-react';
 import axios from 'axios';
 import { todayISO } from '../utils';
+import { useSort, SortTh } from '../sorting';
 
 const API = axios.create({ baseURL: 'http://127.0.0.1:5000' });
 
@@ -268,8 +269,15 @@ function AddAdvanceModal({ knownSellerNames, onClose, onAdded }) {
   );
 }
 
-function SellerAdvanceRow({ sellerKey, displayName, village, mobile, advances, totalGiven, totalRepaid, outstanding, onChange }) {
+function SellerAdvanceRow({ slNo, sellerKey, displayName, village, mobile, advances, totalGiven, totalRepaid, outstanding, onChange }) {
   const [expanded, setExpanded] = useState(false);
+  const { sort, toggleSort, sortRows } = useSort('date', 'desc');
+  const sortedAdvances = sortRows(advances, {
+    date:   a => a.advance_date,
+    type:   a => (a.type === 'repaid' ? 'Repaid' : 'Given'),
+    note:   a => a.note,
+    amount: a => Number(a.amount) || 0,
+  });
   const [repaying, setRepaying] = useState(false);
 
   const deleteAdvance = async (id) => {
@@ -286,6 +294,7 @@ function SellerAdvanceRow({ sellerKey, displayName, village, mobile, advances, t
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer' }}
         onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
         onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; }}>
+        <td style={{ ...tdS, color: 'var(--text-muted)', fontSize: 12, width: 44 }}>{slNo}</td>
         <td style={{ ...tdS, fontWeight: 700 }}>{displayName}</td>
         <td style={{ ...tdS, color: 'var(--text-muted)', fontSize: 12 }}>{village || '—'}</td>
         <td style={{ ...tdS, color: 'var(--text-muted)', fontSize: 12 }}>{mobile || '—'}</td>
@@ -297,12 +306,12 @@ function SellerAdvanceRow({ sellerKey, displayName, village, mobile, advances, t
           <button onClick={e => { e.stopPropagation(); setExpanded(true); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--accent)', color: '#fff',
               border: 'none', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-            <Eye size={13} /> View
+            <Eye size={13} /> <span className="btn-text">View</span>
           </button>
           <button onClick={e => { e.stopPropagation(); setRepaying(true); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#22c55e', color: '#fff',
               border: 'none', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600, marginLeft: 6 }}>
-            <RotateCcw size={13} /> Repay
+            <RotateCcw size={13} /> <span className="btn-text">Repay</span>
           </button>
         </td>
       </tr>
@@ -339,10 +348,10 @@ function SellerAdvanceRow({ sellerKey, displayName, village, mobile, advances, t
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 6 }}>
                 <thead>
                   <tr style={{ background: 'var(--bg-card)' }}>
-                    <th style={thS}>Date</th>
-                    <th style={thS}>Type</th>
-                    <th style={thS}>Note</th>
-                    <th style={{ ...thS, textAlign: 'right' }}>Amount</th>
+                    <SortTh col="date" label="Date" style={thS} sort={sort} onSort={toggleSort} />
+                    <SortTh col="type" label="Type" style={thS} sort={sort} onSort={toggleSort} />
+                    <SortTh col="note" label="Note" style={thS} sort={sort} onSort={toggleSort} />
+                    <SortTh col="amount" label="Amount" align="right" style={thS} sort={sort} onSort={toggleSort} />
                     <th style={{ ...thS, textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
@@ -350,7 +359,7 @@ function SellerAdvanceRow({ sellerKey, displayName, village, mobile, advances, t
                   {advances.length === 0 ? (
                     <tr><td colSpan={5} style={{ ...tdS, textAlign: 'center', color: 'var(--text-muted)' }}>No entries recorded yet</td></tr>
                   ) : (
-                    advances.map(a => (
+                    sortedAdvances.map(a => (
                       <AdvanceRow key={a.id} advance={a} onSave={onChange} onDelete={deleteAdvance} />
                     ))
                   )}
@@ -371,6 +380,7 @@ export default function SellerAdvance() {
   const [loading, setLoading] = useState(true);
   const [showAddAdvance, setShowAddAdvance] = useState(false);
   const [search, setSearch] = useState('');
+  const { sort: listSort, toggleSort: toggleListSort, sortRows: sortList } = useSort('name');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -419,18 +429,24 @@ export default function SellerAdvance() {
   const grandRepaid     = withTotals.reduce((s, r) => s + r.totalRepaid, 0);
   const grandOutstanding = withTotals.reduce((s, r) => s + r.outstanding, 0);
 
-  const filtered = withTotals.filter(r =>
+  const filtered = sortList(withTotals.filter(r =>
     !search || r.displayName.toLowerCase().includes(search.toLowerCase())
-  );
+  ), {
+    name:        r => r.displayName,
+    village:     r => r.village,
+    mobile:      r => r.mobile,
+    given:       r => r.totalGiven,
+    repaid:      r => r.totalRepaid,
+    outstanding: r => r.outstanding,
+    entries:     r => r.advances.length,
+  });
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+    <div>
+      <div className="page-header">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Seller Advance List</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>
-            Cash given to sellers before they bring produce to sell — who, how much, and any repayments
-          </p>
+          <div className="page-title">Seller Advance List</div>
+          <div className="page-subtitle">Cash given to sellers before they bring produce to sell — who, how much, and any repayments</div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => setShowAddAdvance(true)}
@@ -451,7 +467,7 @@ export default function SellerAdvance() {
       )}
 
       {/* Summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
         <div style={{ background: 'var(--bg-card)', borderRadius: 12, padding: '16px 20px', border: '1px solid var(--border)' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Given</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: '#a855f7' }}>₹{fmt(grandGiven)}</div>
@@ -486,26 +502,27 @@ export default function SellerAdvance() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: 'var(--bg-panel)', borderBottom: '2px solid var(--border)' }}>
-              <th style={thS}>Seller Name</th>
-              <th style={thS}>Village</th>
-              <th style={thS}>Mobile</th>
-              <th style={{ ...thS, textAlign: 'right' }}>Given</th>
-              <th style={{ ...thS, textAlign: 'right' }}>Repaid</th>
-              <th style={{ ...thS, textAlign: 'right' }}>Outstanding</th>
-              <th style={thS}>Entries</th>
+              <th style={{ ...thS, width: 44 }}>#</th>
+              <SortTh col="name" label="Seller Name" style={thS} sort={listSort} onSort={toggleListSort} />
+              <SortTh col="village" label="Village" style={thS} sort={listSort} onSort={toggleListSort} />
+              <SortTh col="mobile" label="Mobile" style={thS} sort={listSort} onSort={toggleListSort} />
+              <SortTh col="given" label="Given" align="right" style={thS} sort={listSort} onSort={toggleListSort} />
+              <SortTh col="repaid" label="Repaid" align="right" style={thS} sort={listSort} onSort={toggleListSort} />
+              <SortTh col="outstanding" label="Outstanding" align="right" style={thS} sort={listSort} onSort={toggleListSort} />
+              <SortTh col="entries" label="Entries" style={thS} sort={listSort} onSort={toggleListSort} />
               <th style={{ ...thS, textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ ...tdS, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Loading...</td></tr>
+              <tr><td colSpan={9} style={{ ...tdS, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Loading...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={8} style={{ ...tdS, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>
+              <tr><td colSpan={9} style={{ ...tdS, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>
                 No advances recorded yet — click "Add Advance" to record one.
               </td></tr>
             ) : (
-              filtered.map(r => (
-                <SellerAdvanceRow key={r.sellerKey} {...r} onChange={load} />
+              filtered.map((r, i) => (
+                <SellerAdvanceRow key={r.sellerKey} slNo={i + 1} {...r} onChange={load} />
               ))
             )}
           </tbody>

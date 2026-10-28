@@ -171,6 +171,35 @@ async function initDb() {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  // Stock purchased by the trader (Purchase List page) — independent of seller/buyer records
+  db.run(`CREATE TABLE IF NOT EXISTS purchases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    purchased_from TEXT NOT NULL,
+    material TEXT NOT NULL,
+    purchase_date TEXT NOT NULL,
+    weight REAL DEFAULT 0,
+    amount REAL NOT NULL,
+    note TEXT DEFAULT '',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Payments made against a purchase (partial or full) — Purchase List → Pay
+  db.run(`CREATE TABLE IF NOT EXISTS purchase_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    purchase_id INTEGER NOT NULL,
+    amount REAL NOT NULL,
+    payment_date TEXT NOT NULL,
+    note TEXT DEFAULT '',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // App-wide settings (key → JSON value), e.g. the configurable material list
+  db.run(`CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   // Auto-migration
   ['sellers', 'buyers'].forEach(table => {
     try { db.run(`ALTER TABLE ${table} ADD COLUMN bag_data TEXT DEFAULT '[]'`); } catch {}
@@ -178,6 +207,11 @@ async function initDb() {
     try { db.run(`ALTER TABLE ${table} ADD COLUMN amount REAL DEFAULT 0`); } catch {}
   });
   try { db.run(`ALTER TABLE sellers ADD COLUMN labour_rate REAL DEFAULT 20`); } catch {}
+  // Commission % charged to the seller (snapshot of the material's rate at registration)
+  try { db.run(`ALTER TABLE sellers ADD COLUMN commission_rate REAL DEFAULT 8`); } catch {}
+  // Seller bill number — issued once (first time the bill is opened/printed) from Settings → Bill Number
+  try { db.run(`ALTER TABLE sellers ADD COLUMN bill_no TEXT DEFAULT NULL`); } catch {}
+  try { db.run(`ALTER TABLE purchases ADD COLUMN num_bags INTEGER DEFAULT 0`); } catch {}
   try { db.run(`ALTER TABLE buyers ADD COLUMN labour_rate REAL DEFAULT 5`); } catch {}
   try { db.run(`ALTER TABLE buyers ADD COLUMN extra_bags INTEGER DEFAULT 0`); } catch {}
   try { db.run(`ALTER TABLE buyers ADD COLUMN extra_bag_amount REAL DEFAULT 0`); } catch {}
@@ -216,10 +250,12 @@ function get(sql, ...params) {
 
 function run(sql, ...params) {
   db.run(sql, params);
-  saveDb();
+  // Read these before saving — db.export() in saveDb() resets last_insert_rowid
+  const changes = db.getRowsModified();
   const lastId = db.exec('SELECT last_insert_rowid() as id')[0];
   const lastInsertRowid = lastId ? lastId.values[0][0] : null;
-  return { lastInsertRowid, changes: db.getRowsModified() };
+  saveDb();
+  return { lastInsertRowid, changes };
 }
 
 // ── Expose a prepare()-like interface matching better-sqlite3 ─────────────────

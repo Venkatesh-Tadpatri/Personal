@@ -261,7 +261,7 @@
 //                     </div>
 
 //                     {/* Lot */}
-//                     <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', fontFamily:'monospace' }}>
+//                     <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', fontFamily:'var(--font-body)' }}>
 //                       {form.serial_number ? lotLabel : '?/?'}
 //                     </div>
 
@@ -624,7 +624,7 @@
 //                     </div>
 
 //                     {/* Lot */}
-//                     <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', fontFamily:'monospace' }}>
+//                     <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', fontFamily:'var(--font-body)' }}>
 //                       {form.serial_number ? lotLabel : '?/?'}
 //                     </div>
 
@@ -714,10 +714,10 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Save, RotateCcw, RefreshCw, CheckCircle, AlertCircle, Package } from 'lucide-react';
 import { createSeller, getSellers } from '../api';
-import { MATERIALS, todayISO, toUpper } from '../utils';
+import { todayISO, toUpper } from '../utils';
+import { useMaterials } from '../materials';
 
 const emptyForm = () => ({
-  serial_number: '',
   name: '',
   mobile: '',
   material: '',
@@ -744,6 +744,7 @@ function Field({ label, required, error, children }) {
 }
 
 export default function SellerRegistration() {
+  const { materials: MATERIALS, getMaterialRates } = useMaterials();
   const [form,       setForm]       = useState(emptyForm());
   const [bagWeights, setBagWeights] = useState([]); // array of { weight: string }
   const [loading,    setLoading]    = useState(false);
@@ -785,9 +786,8 @@ export default function SellerRegistration() {
   const groupedMaterialLabel = form.material
     ? form.material.charAt(0) + form.material.slice(1).toLowerCase()
     : 'Grouped';
-  const lotLabel = numBags > 0 && form.serial_number
-    ? `${form.serial_number}/${numBags}`
-    : (form.serial_number ? `${form.serial_number}/?` : '?/?');
+  // Serial number is auto-assigned by the server on save
+  const lotLabel = numBags > 0 ? `Auto/${numBags}` : 'Auto/?';
 
   // Distribute n bags evenly across rows, remainder to first groups
   const redistributeGingerBags = (rows, n) => {
@@ -853,7 +853,6 @@ export default function SellerRegistration() {
 
   const validate = () => {
     const errs = {};
-    if (!form.serial_number.trim()) errs.serial_number = 'Required';
     if (!form.name.trim())          errs.name          = 'Required';
     if (!form.num_bags || numBags < 1) errs.num_bags   = 'Enter number of bags';
     if (!form.entry_date)           errs.entry_date    = 'Required';
@@ -882,7 +881,7 @@ export default function SellerRegistration() {
 
     setLoading(true);
     try {
-      const lot_number = `${form.serial_number}/${numBags}`;
+      const lot_number = lotLabel; // replaced with the real serial by the server
 
       // ✅ Build bag_data with actual weights
       // For grouped materials: each group row is expanded into individual bag entries (weight split equally)
@@ -909,7 +908,6 @@ export default function SellerRegistration() {
       console.log('[Registration] Saving bag_data:', JSON.stringify(bagDataArray));
 
       const payload = {
-        serial_number: form.serial_number,
         name:          form.name,
         mobile:        form.mobile || '0000000000',
         material:      form.material || 'GENERAL',
@@ -924,8 +922,8 @@ export default function SellerRegistration() {
       const res = await createSeller(payload);
 
       if (res.data.success) {
-        toast.success(`${form.name} registered! Total: ${totalWeight.toFixed(2)} kg`);
-        setLastSaved({ ...form, weight: totalWeight, lot_number, id: res.data.id });
+        toast.success(`${form.name} registered as Serial No. ${res.data.serial_number}${res.data.bill_no ? `, Bill No. ${res.data.bill_no}` : ''}! Total: ${totalWeight.toFixed(2)} kg`);
+        setLastSaved({ ...form, weight: totalWeight, serial_number: res.data.serial_number, lot_number: res.data.lot_number, bill_no: res.data.bill_no, id: res.data.id });
         setSellerHistory(prev => [
           { name: form.name, mobile: form.mobile || '0000000000' },
           ...prev.filter(s => s.name !== form.name),
@@ -961,7 +959,7 @@ export default function SellerRegistration() {
         <div style={{ background:'var(--green-dim)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:'var(--radius)', padding:'14px 20px', marginBottom:20, display:'flex', alignItems:'center', gap:10, color:'var(--green)' }}>
           <CheckCircle size={18} />
           <span style={{ fontSize:13, fontWeight:600 }}>
-            ✓ <strong>{lastSaved.name}</strong> — Lot: <strong>{lastSaved.lot_number}</strong> | {lastSaved.num_bags} bags | Total: <strong>{Number(lastSaved.weight).toFixed(2)} kg</strong>
+            ✓ <strong>{lastSaved.name}</strong> — {lastSaved.bill_no && <>Bill No: <strong>{lastSaved.bill_no}</strong> | </>}Lot: <strong>{lastSaved.lot_number}</strong> | {lastSaved.num_bags} bags | Total: <strong>{Number(lastSaved.weight).toFixed(2)} kg</strong>
           </span>
         </div>
       )}
@@ -969,12 +967,7 @@ export default function SellerRegistration() {
       <div className="card">
         <div className="card-title">👨‍🌾 Seller Details</div>
         <form onSubmit={submit} noValidate>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:18, marginBottom:18 }}>
-
-            <Field label="Serial Number" required error={errors.serial_number}>
-              <input className="form-input" name="serial_number" value={form.serial_number}
-                onChange={handle} placeholder="e.g. 1" style={errStyle('serial_number')} />
-            </Field>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:18, marginBottom:18 }}>
 
             <Field label="Seller Name" required error={errors.name}>
               <div style={{ position: 'relative' }}>
@@ -1015,6 +1008,15 @@ export default function SellerRegistration() {
                 <option value="">— Select Material —</option>
                 {MATERIALS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
+              {form.material && (() => {
+                // Rates the server applies to this seller (from Settings → Materials)
+                const r = getMaterialRates(form.material);
+                return (
+                  <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:6 }}>
+                    Commission <strong style={{ color:'var(--text-secondary)' }}>{r.commission}%</strong> · Labour <strong style={{ color:'var(--text-secondary)' }}>₹{r.labour}/bag</strong>
+                  </div>
+                );
+              })()}
             </Field>
 
             <Field label="Number of Bags" required error={errors.num_bags}>
@@ -1105,8 +1107,8 @@ export default function SellerRegistration() {
                           </div>
 
                           {/* Lot */}
-                          <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', fontFamily:'monospace' }}>
-                            {form.serial_number ? lotLabel : '?/?'}
+                          <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', fontFamily:'var(--font-body)' }}>
+                            {lotLabel}
                           </div>
 
                           {/* Bags in this group — editable */}
@@ -1206,8 +1208,8 @@ export default function SellerRegistration() {
                         </div>
 
                         {/* Lot */}
-                        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', fontFamily:'monospace' }}>
-                          {form.serial_number ? lotLabel : '?/?'}
+                        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', fontFamily:'var(--font-body)' }}>
+                          {lotLabel}
                         </div>
 
                         {/* Weight input */}
@@ -1265,6 +1267,7 @@ export default function SellerRegistration() {
                 {numBags > 0  && <span>🛍 {numBags} bags · Lot {lotLabel}</span>}
                 {totalWeight > 0 && <span>⚖️ <strong>{totalWeight.toFixed(2)} kg</strong></span>}
                 {form.advance_amount && <span>💳 Advance: ₹{form.advance_amount}</span>}
+                {form.material && <span>🧾 Commission {getMaterialRates(form.material).commission}% · Labour ₹{getMaterialRates(form.material).labour}/bag</span>}
               </div>
             </div>
           )}

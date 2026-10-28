@@ -416,7 +416,7 @@
 //                               <td style={{ ...cell, fontWeight:700, color:'var(--text-primary)', borderBottom:lb }}>{seller.name}</td>
 //                               <td style={{ ...cell, textAlign:'center', borderBottom:lb }}>{mat!=='—'?<span className={'badge '+badge}>{mat}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>
 //                               <td style={{ ...cell, textAlign:'center', fontWeight:700, borderBottom:lb }}>{numBags}</td>
-//                               <td style={{ ...cell, fontFamily:'monospace', fontWeight:700, color:'var(--text-primary)', textAlign:'center', borderBottom:lb }}>{seller.lot_number||'—'}</td>
+//                               <td style={{ ...cell, fontFamily:'var(--font-body)', fontWeight:700, color:'var(--text-primary)', textAlign:'center', borderBottom:lb }}>{seller.lot_number||'—'}</td>
 //                               <td style={{ ...cell, textAlign:'right', fontWeight:700, color:'var(--blue)', borderBottom:lb }}>{seller.weight>0?fmtNum(seller.weight):'—'}</td>
 //                               <td style={{ ...cell, textAlign:'right', color:'var(--text-muted)', borderBottom:lb }}>—</td>
 //                               <td style={{ ...cell, textAlign:'right', fontWeight:800, color:'var(--accent)', borderBottom:lb }}>{seller.amount>0?'₹ '+fmtINR(seller.amount):'—'}</td>
@@ -440,7 +440,7 @@
 //                               {/* Bags — merged */}
 //                               {bi===0 && <td rowSpan={rc} style={{ ...merged, textAlign:'center', fontWeight:800, fontSize:14, color:'var(--text-primary)' }}>{numBags}</td>}
 //                               {/* Lot No — per row */}
-//                               <td style={{ ...td, fontFamily:'monospace', fontWeight:700, color:'var(--blue)', textAlign:'center', fontSize:12 }}>{bag.lot||seller.lot_number||'—'}</td>
+//                               <td style={{ ...td, fontFamily:'var(--font-body)', fontWeight:700, color:'var(--blue)', textAlign:'center', fontSize:12 }}>{bag.lot||seller.lot_number||'—'}</td>
 //                               {/* Weight */}
 //                               <td style={{ ...td, textAlign:'right', fontWeight:700, color:Number(bag.weight)>0?'var(--blue)':'var(--text-muted)' }}>{Number(bag.weight)>0?fmtNum(bag.weight):'—'}</td>
 //                               {/* Rate */}
@@ -985,7 +985,7 @@
 //                               <td style={{ ...cell, fontWeight:700, color:'var(--text-primary)', borderBottom:lb }}>{seller.name}</td>
 //                               <td style={{ ...cell, textAlign:'center', borderBottom:lb }}>{mat!=='—'?<span className={'badge '+badge}>{mat}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>
 //                               <td style={{ ...cell, textAlign:'center', fontWeight:700, borderBottom:lb }}>{numBags}</td>
-//                               <td style={{ ...cell, fontFamily:'monospace', fontWeight:700, color:'var(--text-primary)', textAlign:'center', borderBottom:lb }}>{seller.lot_number||'—'}</td>
+//                               <td style={{ ...cell, fontFamily:'var(--font-body)', fontWeight:700, color:'var(--text-primary)', textAlign:'center', borderBottom:lb }}>{seller.lot_number||'—'}</td>
 //                               <td style={{ ...cell, textAlign:'right', fontWeight:700, color:'var(--blue)', borderBottom:lb }}>{seller.weight>0?fmtNum(seller.weight):'—'}</td>
 //                               <td style={{ ...cell, textAlign:'right', color:'var(--text-muted)', borderBottom:lb }}>—</td>
 //                               <td style={{ ...cell, textAlign:'right', fontWeight:800, color:'var(--accent)', borderBottom:lb }}>{seller.amount>0?'₹ '+fmtINR(seller.amount):'—'}</td>
@@ -1009,7 +1009,7 @@
 //                               {/* Bags — merged */}
 //                               {bi===0 && <td rowSpan={rc} style={{ ...merged, textAlign:'center', fontWeight:800, fontSize:14, color:'var(--text-primary)' }}>{numBags}</td>}
 //                               {/* Lot No — per row */}
-//                               <td style={{ ...td, fontFamily:'monospace', fontWeight:700, color:'var(--blue)', textAlign:'center', fontSize:12 }}>{bag.lot||seller.lot_number||'—'}</td>
+//                               <td style={{ ...td, fontFamily:'var(--font-body)', fontWeight:700, color:'var(--blue)', textAlign:'center', fontSize:12 }}>{bag.lot||seller.lot_number||'—'}</td>
 //                               {/* Weight */}
 //                               <td style={{ ...td, textAlign:'right', fontWeight:700, color:Number(bag.weight)>0?'var(--blue)':'var(--text-muted)' }}>{Number(bag.weight)>0?fmtNum(bag.weight):'—'}</td>
 //                               {/* Rate */}
@@ -1538,7 +1538,7 @@
 //                               <td style={{ ...cell, fontWeight:700, color:'var(--text-primary)', borderBottom:lb }}>{seller.name}</td>
 //                               <td style={{ ...cell, textAlign:'center', borderBottom:lb }}>{mat!=='—'?<span className={'badge '+badge}>{mat}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>
 //                               <td style={{ ...cell, textAlign:'center', fontWeight:700, borderBottom:lb }}>{numBags}</td>
-//                               <td style={{ ...cell, fontFamily:'monospace', fontWeight:700, color:'var(--text-primary)', textAlign:'center', borderBottom:lb }}>{seller.lot_number||'—'}</td>
+//                               <td style={{ ...cell, fontFamily:'var(--font-body)', fontWeight:700, color:'var(--text-primary)', textAlign:'center', borderBottom:lb }}>{seller.lot_number||'—'}</td>
 //                               <td style={{ ...cell, textAlign:'right', fontWeight:700, color:'var(--blue)', borderBottom:lb }}>{seller.weight>0?fmtNum(seller.weight):'—'}</td>
 //                               <td style={{ ...cell, textAlign:'right', color:'var(--text-muted)', borderBottom:lb }}>—</td>
 //                               <td style={{ ...cell, textAlign:'right', fontWeight:800, color:'var(--accent)', borderBottom:lb }}>{seller.amount>0?'₹ '+fmtINR(seller.amount):'—'}</td>
@@ -1562,7 +1562,7 @@
 //                               {/* Bags — merged */}
 //                               {bi===0 && <td rowSpan={rc} style={{ ...merged, textAlign:'center', fontWeight:800, fontSize:14, color:'var(--text-primary)' }}>{numBags}</td>}
 //                               {/* Lot No — per row */}
-//                               <td style={{ ...td, fontFamily:'monospace', fontWeight:700, color:'var(--blue)', textAlign:'center', fontSize:12 }}>{bag.lot||seller.lot_number||'—'}</td>
+//                               <td style={{ ...td, fontFamily:'var(--font-body)', fontWeight:700, color:'var(--blue)', textAlign:'center', fontSize:12 }}>{bag.lot||seller.lot_number||'—'}</td>
 //                               {/* Weight */}
 //                               <td style={{ ...td, textAlign:'right', fontWeight:700, color:Number(bag.weight)>0?'var(--blue)':'var(--text-muted)' }}>{Number(bag.weight)>0?fmtNum(bag.weight):'—'}</td>
 //                               {/* Rate */}
@@ -1678,7 +1678,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { RefreshCw, TrendingUp, Users, ShoppingCart, Package, Download, Printer } from 'lucide-react';
 import axios from 'axios';
-import { fmtINR, fmtNum, todayISO } from '../utils';
+import { fmtINR, fmtNum, todayISO, sellerCommission, sellerCommissionPct } from '../utils';
+import { useSort, SortTh } from '../sorting';
 
 const API = axios.create({ baseURL: 'http://127.0.0.1:5000' });
 
@@ -1690,7 +1691,7 @@ const MATERIAL_COLORS = {
 };
 const DEFAULT_COLOR = { bg: 'var(--accent-dim)', color: 'var(--accent)', bar: '#f59e0b' };
 
-const COMM_RATE = 0.08; // 8% commission
+// Commission is per seller (commission_rate, from the material's settings) — see sellerCommission()
 
 // const fmt2 = (v) => Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 // const fmtN = (v) => Number(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
@@ -1709,6 +1710,24 @@ function getSellerGross(seller) {
 }
 
 const isGroupedSummaryMaterial = (material) => ['GINGER', 'ONION'].includes(material);
+
+// Seller-wise Detail columns (col = sort key; a seller spans several bag rows, so bag
+// columns sort by the seller's totals)
+const SELLER_COLS = [
+  { label:'Sr',             align:'center', col:null },
+  { label:'Name',           align:'left',   col:'name' },
+  { label:'Material',       align:'center', col:'material' },
+  { label:'Bags',           align:'center', col:'bags' },
+  { label:'Lot No',         align:'center', col:'lot' },
+  { label:'Weight (kg)',    align:'right',  col:'weight' },
+  { label:'Rate (/100kg)',  align:'right',  col:'rate' },
+  { label:'Amount (₹)',     align:'right',  col:'amount' },
+  { label:'Gross Amt (₹)',  align:'right',  col:'gross' },
+  { label:'Commission (₹)', align:'right',  col:'commission' },
+  { label:'Advance (₹)',    align:'right',  col:'advance' },
+  { label:'Total Payable',  align:'right',  col:'payable' },
+];
+const SELLER_COL_LABELS = Object.fromEntries(SELLER_COLS.filter(c => c.col).map(c => [c.col, c.label]));
 
 function getSummaryBagRows(seller) {
   let bags = [];
@@ -1742,6 +1761,7 @@ function getSummaryBagRows(seller) {
 
 export default function Summary() {
   const [data,       setData]       = useState(null);
+  const { sort, toggleSort, sortRows } = useSort(null); // serial-number order until a column is clicked
   const [sellers,    setSellers]    = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [filterDate, setFilterDate] = useState(todayISO());
@@ -1780,9 +1800,22 @@ export default function Summary() {
   // Totals using bag-level amounts
   const totalBags       = sellers.reduce((s, r) => s + (parseInt(r.num_bags) || 0), 0);
   const totalWeight     = sellers.reduce((s, r) => s + (Number(r.weight) || 0), 0);
+  const sortedSellers = sortRows(sellers, {
+    name:       s => s.name,
+    material:   s => (s.material && s.material !== 'GENERAL' ? s.material : ''),
+    bags:       s => parseInt(s.num_bags) || 0,
+    lot:        s => s.lot_number,
+    weight:     s => Number(s.weight) || 0,
+    rate:       s => (Number(s.weight) > 0 ? getSellerGross(s) / Number(s.weight) * 100 : null),
+    amount:     s => getSellerGross(s),
+    gross:      s => getSellerGross(s),
+    commission: s => sellerCommission(s, getSellerGross(s)),
+    advance:    s => Number(s.advance_amount) || 0,
+    payable:    s => getSellerGross(s) - sellerCommission(s, getSellerGross(s)) - (Number(s.advance_amount) || 0),
+  });
   const totalGross      = sellers.reduce((s, r) => s + getSellerGross(r), 0);
   // const totalCommission = totalGross * COMM_RATE;
-  const totalCommission = Math.round(totalGross * COMM_RATE);
+  const totalCommission = Math.round(sellers.reduce((s, r) => s + getSellerGross(r) * sellerCommissionPct(r) / 100, 0));
   const totalAdvance    = sellers.reduce((s, r) => s + (Number(r.advance_amount) || 0), 0);
   // const totalPayable    = totalGross - totalCommission - totalAdvance;
   const totalPayable    = Math.round(totalGross - totalCommission - totalAdvance);
@@ -1796,7 +1829,7 @@ export default function Summary() {
     const bags = getSummaryBagRows(s);
     const numBags = parseInt(s.num_bags) || 0;
     const gross = getSellerGross(s);
-    const comm  = Math.round(gross * COMM_RATE);
+    const comm  = sellerCommission(s, gross);
     const adv   = Number(s.advance_amount) || 0;
     // const pay   = gross - comm - adv;
     const pay   = Math.round(gross - comm - adv);
@@ -1854,7 +1887,7 @@ export default function Summary() {
       const numBags = parseInt(seller.num_bags)||0;
       const mat = seller.material&&seller.material!=='GENERAL'?seller.material:'—';
       const gross = getSellerGross(seller);
-      const comm  = Math.round(gross * COMM_RATE);
+      const comm  = sellerCommission(seller, gross);
       const adv   = Number(seller.advance_amount)||0;
       const pay   = gross - comm - adv;
       const rowBg = si%2===0?'#ffffff':'#f0f7ff';
@@ -1947,7 +1980,7 @@ export default function Summary() {
       <th style="width:80px;text-align:right">Rate(/100kg)</th>
       <th style="width:85px;text-align:right">Amount(₹)</th>
       <th style="width:90px;text-align:right;background:#1e3a8a">Gross Amt(₹)</th>
-      <th style="width:85px;text-align:right;background:#7f1d1d">Comm 8%(₹)</th>
+      <th style="width:85px;text-align:right;background:#7f1d1d">Commission (₹)</th>
       <th style="width:80px;text-align:right">Advance(₹)</th>
       <th style="text-align:right;background:#14532d">Total Payable(₹)</th>
     </tr></thead>
@@ -1969,7 +2002,7 @@ export default function Summary() {
     <div class="sum-item"><div class="sum-label">Total Bags</div><div class="sum-val">${totalBags}</div></div>
     <div class="sum-item"><div class="sum-label">Total Weight</div><div class="sum-val">${fmtN(totalWeight)} kg</div></div>
     <div class="sum-item"><div class="sum-label">Gross Amount</div><div class="sum-val">₹ ${fmt2(totalGross)}</div></div>
-    <div class="sum-item"><div class="sum-label">Commission (8%)</div><div class="sum-val" style="color:#dc2626">₹ ${fmt2(totalCommission)}</div></div>
+    <div class="sum-item"><div class="sum-label">Commission</div><div class="sum-val" style="color:#dc2626">₹ ${fmt2(totalCommission)}</div></div>
     <div class="sum-item"><div class="sum-label">Advance Paid</div><div class="sum-val" style="color:#555">₹ ${fmt2(totalAdvance)}</div></div>
     <div class="sum-item"><div class="sum-label">Total Payable</div><div class="sum-val" style="color:#166534">₹ ${fmt2(totalPayable)}</div></div>
   </div>
@@ -2063,7 +2096,7 @@ export default function Summary() {
               <div className="card-title" style={{ margin:0 }}>
                 📋 Seller-wise Detail &nbsp;
                 <span style={{ fontSize:12, color:'var(--text-muted)', fontWeight:400 }}>
-                  ({sellers.length} sellers · sorted by serial no.)
+                  ({sellers.length} sellers · sorted by {sort.key ? SELLER_COL_LABELS[sort.key] + (sort.dir === 'asc' ? ' ↑' : ' ↓') : 'serial no.'})
                 </span>
               </div>
               <button onClick={() => setShowTable(t => !t)} className="btn btn-secondary btn-sm">
@@ -2079,49 +2112,25 @@ export default function Summary() {
                     <h3>No seller data for this period</h3>
                   </div>
                 ) : (
-                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, tableLayout:'fixed' }}>
-                    <colgroup>
-                      <col style={{ width:'46px' }}/>
-                      <col style={{ width:'120px' }}/>
-                      <col style={{ width:'100px' }}/>
-                      <col style={{ width:'50px' }}/>
-                      <col style={{ width:'70px' }}/>
-                      <col style={{ width:'90px' }}/>
-                      <col style={{ width:'100px' }}/>
-                      <col style={{ width:'105px' }}/>
-                      <col style={{ width:'110px' }}/>
-                      <col style={{ width:'105px' }}/>
-                      <col style={{ width:'95px' }}/>
-                      <col style={{ width:'115px' }}/>
-                    </colgroup>
+                  <table className="report-table" style={{ width:'100%', borderCollapse:'collapse', fontSize:13, tableLayout:'auto' }}>
                     <thead>
                       <tr style={{ background:'var(--bg-panel)' }}>
-                        {[
-                          { label:'Sr',             align:'center' },
-                          { label:'Name',           align:'left'   },
-                          { label:'Material',       align:'center' },
-                          { label:'Bags',           align:'center' },
-                          { label:'Lot No',         align:'center' },
-                          { label:'Weight (kg)',    align:'right'  },
-                          { label:'Rate (/100kg)',  align:'right'  },
-                          { label:'Amount (₹)',     align:'right'  },
-                          { label:'Gross Amt (₹)',  align:'right'  },
-                          { label:'Commission (₹)',    align:'right'  },
-                          { label:'Advance (₹)',    align:'right'  },
-                          { label:'Total Payable',  align:'right'  },
-                        ].map(h => (
-                          <th key={h.label} style={{
+                        {SELLER_COLS.map(h => {
+                          const thStyle = {
                             padding:'10px 8px', textAlign:h.align,
                             fontSize:10, fontWeight:700, letterSpacing:0.8, textTransform:'uppercase',
                             color:'var(--text-muted)',
                             borderBottom:'2px solid var(--accent)',
                             borderRight:'1px solid var(--border)',
-                          }}>{h.label}</th>
-                        ))}
+                          };
+                          return h.col
+                            ? <SortTh key={h.label} col={h.col} label={h.label} align={h.align} style={thStyle} sort={sort} onSort={toggleSort} />
+                            : <th key={h.label} style={thStyle}>{h.label}</th>;
+                        })}
                       </tr>
                     </thead>
                     <tbody>
-                      {sellers.map((seller, si) => {
+                      {sortedSellers.map((seller, si) => {
       const bags = getSummaryBagRows(seller);
                         const numBags = parseInt(seller.num_bags) || 0;
                         const mat = seller.material && seller.material !== 'GENERAL' ? seller.material : '—';
@@ -2131,7 +2140,7 @@ export default function Summary() {
                         const merged = { ...cell, background:rowBg, borderBottom:'2px solid var(--accent)' };
                         const badge = mat==='TAMARIND'?'badge-amber':mat==='GINGER'?'badge-green':mat==='ONION'?'badge-blue':mat==='LEMONS'?'badge-purple':'badge-amber';
                         const gross = getSellerGross(seller);
-                        const comm  = Math.round(gross * COMM_RATE);
+                        const comm  = sellerCommission(seller, gross);
                         const adv   = Number(seller.advance_amount) || 0;
                         const pay   = gross - comm - adv;
 
@@ -2143,7 +2152,7 @@ export default function Summary() {
                               <td style={{ ...cell, fontWeight:700, color:'var(--text-primary)', borderBottom:lb }}>{seller.name}</td>
                               <td style={{ ...cell, textAlign:'center', borderBottom:lb }}>{mat!=='—'?<span className={'badge '+badge}>{mat}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>
                               <td style={{ ...cell, textAlign:'center', fontWeight:700, borderBottom:lb }}>{numBags}</td>
-                              <td style={{ ...cell, fontFamily:'monospace', fontWeight:700, textAlign:'center', borderBottom:lb }}>{seller.lot_number||'—'}</td>
+                              <td style={{ ...cell, fontFamily:'var(--font-body)', fontWeight:700, textAlign:'center', borderBottom:lb }}>{seller.lot_number||'—'}</td>
                               <td style={{ ...cell, textAlign:'right', fontWeight:700, color:'var(--blue)', borderBottom:lb }}>{seller.weight>0?fmtNum(seller.weight):'—'}</td>
                               <td style={{ ...cell, textAlign:'right', color:'var(--text-muted)', borderBottom:lb }}>—</td>
                               <td style={{ ...cell, textAlign:'right', color:'var(--text-muted)', borderBottom:lb }}>—</td>
@@ -2165,7 +2174,7 @@ export default function Summary() {
                               {bi===0 && <td rowSpan={rc} style={{ ...merged, fontWeight:700, color:'var(--text-primary)' }}>{seller.name}</td>}
                               {bi===0 && <td rowSpan={rc} style={{ ...merged, textAlign:'center' }}>{mat!=='—'?<span className={'badge '+badge}>{mat}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>}
                               <td style={{ ...td, textAlign:'center', fontWeight:800, color:'var(--text-primary)' }}>{Number(bag.bags)||1}</td>
-                              <td style={{ ...td, fontFamily:'monospace', fontWeight:700, color:'var(--blue)', textAlign:'center', fontSize:12 }}>{bag.lot||seller.lot_number||'—'}</td>
+                              <td style={{ ...td, fontFamily:'var(--font-body)', fontWeight:700, color:'var(--blue)', textAlign:'center', fontSize:12 }}>{bag.lot||seller.lot_number||'—'}</td>
                               <td style={{ ...td, textAlign:'right', fontWeight:700, color:Number(bag.weight)>0?'var(--blue)':'var(--text-muted)' }}>{Number(bag.weight)>0?fmtNum(bag.weight):'—'}</td>
                               <td style={{ ...td, textAlign:'right', fontWeight:700, color:Number(bag.rate)>0?'var(--green)':'var(--text-muted)' }}>{Number(bag.rate)>0?fmtNum(bag.rate):'—'}</td>
                               <td style={{ ...td, textAlign:'right', fontWeight:800, color:Number(bag.amount)>0?'var(--accent)':'var(--text-muted)' }}>{Number(bag.amount)>0?'₹ '+fmtINR(bag.amount):'—'}</td>
@@ -2245,7 +2254,7 @@ export default function Summary() {
               <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
                 {[
                   { label:'Gross Amount',    value:'₹ '+fmtINR(totalGross),        color:'var(--accent)' },
-                  { label:'Commission (8%)', value:'₹ '+fmtINR(totalCommission),   color:'#dc2626' },
+                  { label:'Commission', value:'₹ '+fmtINR(totalCommission),   color:'#dc2626' },
                   { label:'Advance Paid',    value:'₹ '+fmtINR(totalAdvance),       color:'var(--text-secondary)' },
                   { label:'Total Payable',   value:'₹ '+fmtINR(totalPayable),      color:'var(--green)' },
                 ].map(row => (

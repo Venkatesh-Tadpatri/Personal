@@ -47,22 +47,22 @@ export default function SplashScreen({ onReady }) {
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', height: '100vh',
-      background: '#060d1a', color: '#f0f6ff',
+      background: 'var(--bg-deep)', color: 'var(--text-primary)',
       fontFamily: 'DM Sans, sans-serif',
     }}>
-      <div style={{ fontSize: 64, marginBottom: 24, animation: 'pulse 2s infinite' }}>🌾</div>
+      <div style={{ width: 88, height: 88, borderRadius: 22, background: 'var(--accent)', color: '#1a1300', fontSize: 38, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, animation: 'pulse 2s infinite' }}>pH</div>
       <div style={{
-        fontFamily: 'Syne, sans-serif', fontSize: 32, fontWeight: 800,
-        color: '#f0f6ff', letterSpacing: -1, marginBottom: 8
+        fontFamily: 'var(--font-body)', fontSize: 32, fontWeight: 800,
+        color: 'var(--text-primary)', letterSpacing: -1, marginBottom: 8
       }}>
         AgriTrader
       </div>
-      <div style={{ fontSize: 13, color: '#7da0c4', marginBottom: 40, letterSpacing: 1, textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 40, letterSpacing: 1, textTransform: 'uppercase' }}>
         Agricultural Market Management
       </div>
 
       {/* Progress bar */}
-      <div style={{ width: 280, background: '#1a3352', borderRadius: 8, height: 6, marginBottom: 16, overflow: 'hidden' }}>
+      <div style={{ width: 280, background: 'var(--border)', borderRadius: 8, height: 6, marginBottom: 16, overflow: 'hidden' }}>
         <div style={{
           height: '100%', width: `${pct}%`,
           background: 'linear-gradient(90deg, #f59e0b, #fbbf24)',
@@ -70,7 +70,7 @@ export default function SplashScreen({ onReady }) {
         }} />
       </div>
 
-      <div style={{ fontSize: 13, color: '#3d607e' }}>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
         {status}{dots}
       </div>
 
